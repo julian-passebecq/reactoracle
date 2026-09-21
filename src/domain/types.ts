@@ -111,6 +111,7 @@ export type AgentHeartbeat = {
 
 export type AgentStatus = {
   connected: boolean;
+  snapshotFresh: boolean;
   lastHeartbeat: AgentHeartbeat | null;
   lastSnapshotAt: string | null;
 };
