@@ -143,6 +143,7 @@ type podList struct {
 
 type podItem struct {
 	Metadata struct {
+		Name      string `json:"name"`
 		Namespace string `json:"namespace"`
 	} `json:"metadata"`
 	Status struct {
@@ -687,6 +688,9 @@ func collectKubernetes(ctx context.Context) ([]Workload, []NamespaceSummary, boo
 	if err != nil {
 		return workloads, []NamespaceSummary{}, false
 	}
+	if pods, err := readPods(ctx); err == nil {
+		applyPodRestartCounts(workloads, pods)
+	}
 	if metrics, err := readPodMetrics(ctx); err == nil {
 		applyPodMetrics(workloads, namespaces, metrics)
 	}
@@ -729,11 +733,23 @@ func workloadStatus(item kubeItem) string {
 	}
 }
 
-func readNamespaces(ctx context.Context) ([]NamespaceSummary, error) {
+func readPods(ctx context.Context) (podList, error) {
 	data, err := kubectlJSON(ctx, "get", "pods", "-A", "-o", "json")
-	if err != nil { return nil, err }
+	if err != nil {
+		return podList{}, err
+	}
 	var pods podList
-	if err := json.Unmarshal(data, &pods); err != nil { return nil, err }
+	if err := json.Unmarshal(data, &pods); err != nil {
+		return podList{}, err
+	}
+	return pods, nil
+}
+
+func readNamespaces(ctx context.Context) ([]NamespaceSummary, error) {
+	pods, err := readPods(ctx)
+	if err != nil {
+		return nil, err
+	}
 	byNamespace := map[string]*NamespaceSummary{}
 	for _, pod := range pods.Items {
 		entry := byNamespace[pod.Metadata.Namespace]
@@ -785,6 +801,34 @@ func readPodMetrics(ctx context.Context) ([]podMetric, error) {
 		})
 	}
 	return result, nil
+}
+
+func applyPodRestartCounts(workloads []Workload, pods podList) {
+	for _, pod := range pods.Items {
+		restarts := 0
+		for _, container := range pod.Status.ContainerStatuses {
+			restarts += container.RestartCount
+		}
+		if restarts == 0 {
+			continue
+		}
+		best := -1
+		bestLen := -1
+		for i := range workloads {
+			if workloads[i].Namespace != pod.Metadata.Namespace {
+				continue
+			}
+			if pod.Metadata.Name == workloads[i].Name || strings.HasPrefix(pod.Metadata.Name, workloads[i].Name+"-") {
+				if len(workloads[i].Name) > bestLen {
+					best = i
+					bestLen = len(workloads[i].Name)
+				}
+			}
+		}
+		if best >= 0 {
+			workloads[best].Restarts += restarts
+		}
+	}
 }
 
 func applyPodMetrics(workloads []Workload, namespaces []NamespaceSummary, metrics []podMetric) {
