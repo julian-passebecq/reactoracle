@@ -66,10 +66,11 @@ class ControlPlaneStore:
             )
 
 
-    def create_health_check(self) -> CommandRun:
+    def create_health_check(self, machine_id: str) -> CommandRun:
         with self._lock:
             run = CommandRun(
                 id=f"cmd_{uuid4().hex}",
+                machineId=machine_id,
                 command="vm.health_check",
                 status="queued",
                 createdAt=datetime.now(timezone.utc),
@@ -88,14 +89,14 @@ class ControlPlaneStore:
             ids = self._command_order[-max(1, min(limit, 100)):]
             return [deepcopy(self._commands[item]) for item in reversed(ids)]
 
-    def lease_next_command(self) -> AgentCommand | None:
+    def lease_next_command(self, machine_id: str) -> AgentCommand | None:
         with self._lock:
             for command_id in self._command_order:
                 run = self._commands[command_id]
-                if run.status == "queued":
+                if run.status == "queued" and run.machineId == machine_id:
                     run.status = "running"
                     self._commands[command_id] = run
-                    return AgentCommand(id=run.id, command=run.command)
+                    return AgentCommand(id=run.id, machineId=run.machineId, command=run.command)
             return None
 
     def complete_command(self, command_id: str, result: AgentCommandResult) -> CommandRun | None:
