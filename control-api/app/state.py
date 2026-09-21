@@ -71,6 +71,7 @@ class ControlPlaneStore:
         machine_id: str,
         command: CommandName,
         arguments: dict[str, str | int | float | bool] | None = None,
+        risk: str = "safe",
     ) -> CommandRun:
         with self._lock:
             run = CommandRun(
@@ -79,6 +80,7 @@ class ControlPlaneStore:
                 command=command,
                 arguments=arguments or {},
                 status="queued",
+                risk=risk,
                 createdAt=datetime.now(timezone.utc),
             )
             self._commands[run.id] = run
