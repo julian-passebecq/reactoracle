@@ -5,10 +5,12 @@ export type RuntimeMode = "mock" | "live";
 export function derivePlatformHealth(
   overview: Overview,
   agentConnected: boolean | undefined,
+  snapshotFresh: boolean | undefined,
   mode: RuntimeMode,
 ): Health {
   if (mode === "mock") return "idle";
   if (agentConnected !== true) return "offline";
+  if (snapshotFresh !== true) return "warning";
 
   const memoryPercent = overview.vm.memoryGb > 0
     ? (overview.vm.memoryUsedGb / overview.vm.memoryGb) * 100
