@@ -2,6 +2,7 @@ import { Spinner } from "@fluentui/react-components";
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
+import { RouteErrorPage } from "./components/RouteErrorPage";
 
 const OverviewPage = lazy(() => import("./pages/OverviewPage").then((module) => ({ default: module.OverviewPage })));
 const ArchitecturePage = lazy(() => import("./pages/ArchitecturePage").then((module) => ({ default: module.ArchitecturePage })));
@@ -25,7 +26,7 @@ export default function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-        <Route element={<AppShell />}>
+        <Route element={<AppShell />} errorElement={<RouteErrorPage />}>
           <Route index element={<OverviewPage />} />
           <Route path="architecture" element={<ArchitecturePage />} />
           <Route path="topology" element={<TopologyPage />} />
