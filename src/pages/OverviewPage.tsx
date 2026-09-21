@@ -21,7 +21,10 @@ export function OverviewPage() {
     <section className="metrics">
       <MetricCard label="CPU" value={vm.cpuPercent + "%"} detail="Host utilization" />
       <MetricCard label="Memory" value={vm.memoryUsedGb + " / " + vm.memoryGb + " GB"} detail="Available for jobs" />
-      <MetricCard label="Storage" value={vm.diskPercent + "%"} detail="Boot volume" />
+      <MetricCard label="Storage" value={vm.diskPercent + "%"} detail={vm.diskUsedGb + " / " + vm.diskTotalGb + " GB"} />
+      <MetricCard label="Network" value={vm.networkRxMbps + " ↓ / " + vm.networkTxMbps + " ↑"} detail="Mbps RX / TX" />
+      <MetricCard label="Load" value={String(vm.load1)} detail={"1-minute load · " + vm.ocpu + " OCPU"} />
+      <MetricCard label="Swap" value={vm.swapUsedGb + " GB"} detail="Used swap" />
       <MetricCard label="Projected OCI bill" value={vm.projectedCost} detail="Free-tier guardrail" />
       <MetricCard label="Oracle agent" value={agentLabel} detail={agentDetail} />
     </section>
