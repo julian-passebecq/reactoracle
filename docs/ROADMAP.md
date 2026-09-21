@@ -110,9 +110,9 @@ Implemented:
 - Go formatting gate
 - ARM64 build in CI
 - monitoring YAML/shell validation
-- production npm vulnerability audit
+- full npm high-severity vulnerability audit
 - deterministic npm lockfile + `npm ci`
-- current GitHub Actions runtimes
+- current GitHub Actions v7 Node 24 runtimes
 - React route-level lazy loading
 
 ## Later
