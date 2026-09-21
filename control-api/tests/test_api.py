@@ -473,6 +473,10 @@ def test_provider_inventory_avoids_unverified_quota_claims() -> None:
     assert oracle["state"] == "live"
     assert oracle["telemetry"] == "partial"
 
+    github = next(provider for provider in providers if provider["id"] == "github")
+    assert github["state"] == "external"
+    assert github["telemetry"] == "not-connected"
+
     motherduck = next(provider for provider in providers if provider["id"] == "motherduck")
     assert motherduck["category"] == "lakehouse"
     assert motherduck["state"] == "planned"
