@@ -19,6 +19,90 @@ def reset_control_plane_store():
     store.reset()
 
 
+def connect_agent(
+    monkeypatch,
+    machine_id: str,
+    *,
+    workload: tuple[str, str, str] | None = None,
+) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    now = datetime.now(timezone.utc).isoformat()
+
+    heartbeat = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": machine_id,
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": now,
+        },
+    )
+    assert heartbeat.status_code == 204
+
+    if workload is None:
+        return
+
+    namespace, name, kind = workload
+    snapshot = client.post(
+        "/api/v1/agent/snapshot",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "machineId": machine_id,
+            "collectedAt": now,
+            "host": {
+                "id": machine_id,
+                "name": machine_id,
+                "shape": "VM.Standard.A1.Flex",
+                "ocpu": 2,
+                "memoryGb": 12,
+                "cpuPercent": 10,
+                "memoryUsedGb": 2,
+                "diskPercent": 10,
+                "uptime": "1h",
+                "k3sVersion": "v1.34",
+                "diskUsedGb": 10,
+                "diskTotalGb": 100,
+            },
+            "workloads": [
+                {
+                    "id": f"{namespace}/{name}",
+                    "name": name,
+                    "namespace": namespace,
+                    "kind": kind,
+                    "status": "Running",
+                    "cpuMillicores": 10,
+                    "memoryMb": 64,
+                    "restarts": 0,
+                }
+            ],
+            "namespaces": [
+                {
+                    "name": namespace,
+                    "podsReady": 1,
+                    "podsTotal": 1,
+                    "cpuMillicores": 10,
+                    "memoryMb": 64,
+                }
+            ],
+            "maintenance": {
+                "os": "Ubuntu",
+                "kernel": "6.x",
+                "updatesAvailable": 0,
+                "securityUpdates": 0,
+                "rebootRequired": False,
+                "unusedImagesGb": 0,
+                "prometheusGb": 0,
+                "lokiGb": 0,
+                "lastBackup": "unknown",
+                "backupStatus": "unknown",
+            },
+        },
+    )
+    assert snapshot.status_code == 204
+
+
 def test_health() -> None:
     response = client.get("/api/v1/health")
     assert response.status_code == 200
@@ -169,7 +253,7 @@ def test_agent_snapshot_updates_read_model(monkeypatch) -> None:
 
 
 def test_safe_health_check_command_round_trip(monkeypatch) -> None:
-    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    connect_agent(monkeypatch, "oracle-command-test")
 
     created = client.post(
         "/api/v1/commands",
@@ -211,7 +295,7 @@ def test_safe_health_check_command_round_trip(monkeypatch) -> None:
 
 
 def test_agent_only_leases_commands_for_its_machine(monkeypatch) -> None:
-    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    connect_agent(monkeypatch, "oracle-other")
     created = client.post(
         "/api/v1/commands",
         json={"command": "vm.health_check", "machineId": "oracle-other"},
@@ -227,7 +311,11 @@ def test_agent_only_leases_commands_for_its_machine(monkeypatch) -> None:
 
 
 def test_k8s_log_command_round_trip(monkeypatch) -> None:
-    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    connect_agent(
+        monkeypatch,
+        "oracle-log-test",
+        workload=("airflow", "airflow-scheduler", "Deployment"),
+    )
 
     created = client.post(
         "/api/v1/commands",
@@ -310,7 +398,11 @@ def test_k8s_log_command_caps_tail() -> None:
 
 
 def test_k8s_restart_command_round_trip(monkeypatch) -> None:
-    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    connect_agent(
+        monkeypatch,
+        "oracle-restart-test",
+        workload=("airflow", "airflow-scheduler", "Deployment"),
+    )
     monkeypatch.setenv("REACTORACLE_ENABLE_MUTATIONS", "true")
 
     created = client.post(
@@ -858,7 +950,7 @@ def test_future_heartbeat_is_not_considered_connected(monkeypatch) -> None:
 
 
 def test_command_result_requires_running_state(monkeypatch) -> None:
-    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    connect_agent(monkeypatch, "oracle-command-state")
     created = client.post(
         "/api/v1/commands",
         json={"command": "vm.health_check", "machineId": "oracle-command-state"},
@@ -1002,7 +1094,7 @@ def test_agent_rejects_machine_identity_switch(monkeypatch) -> None:
 
 
 def test_agent_command_result_payload_is_bounded(monkeypatch) -> None:
-    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    connect_agent(monkeypatch, "oracle-result-limit")
     created = client.post(
         "/api/v1/commands",
         json={"command": "vm.health_check", "machineId": "oracle-result-limit"},
