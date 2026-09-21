@@ -21,9 +21,9 @@ export const providerInventoryMock: ProviderInventory = {
       state: "external",
       role: "Source repositories, DAGs, manifests, CI/CD and release artifacts",
       costIntent: "free-tier",
-      telemetry: "partial",
+      telemetry: "not-connected",
       limitsVerified: false,
-      detail: "Workflow state can be integrated separately from account-level quota telemetry.",
+      detail: "GitHub is the active source/CI provider, but ReactOracle has no GitHub usage adapter connected yet.",
     },
     {
       id: "cloudflare",
