@@ -121,12 +121,16 @@ export function ArchitecturePage() {
       <section className="sectionGap">
         <div className="sectionHeader">
           <div>
-            <Title3>Canonical data flows</Title3>
-            <Text className="muted">Gold is complete without ML; Kaggle and Neon are optional enrichment / serving branches.</Text>
+            <Title3>Mega architecture map</Title3>
+            <Text className="muted">
+              Code delivery, the external control plane, Oracle compute, durable data engineering and optional ML are shown as separate lanes.
+            </Text>
           </div>
         </div>
 
-        <div className="architectureLanes" aria-label="Canonical data platform flows">
+        <div className="architectureLanes" aria-label="ReactOracle macro architecture flows">
+          <FlowLane ids={data.deliveryFlow} label="Code & delivery plane" nodes={nodeById} />
+          <FlowLane ids={data.controlFlow} label="Control plane → Oracle compute" nodes={nodeById} />
           <FlowLane ids={data.engineeringFlow} label="Core data engineering → Gold" nodes={nodeById} />
           <FlowLane ids={data.mlEnrichmentFlow} label="Optional ML enrichment → Gold history / compact serving state" nodes={nodeById} />
         </div>
