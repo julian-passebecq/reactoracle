@@ -102,7 +102,7 @@ export const mlDataFactoryStages: DataFactoryStage[] = [
     name: "Train",
     engine: "MLJAR",
     location: "Kaggle",
-    state: "external",
+    state: "planned",
     detail: "Optional bounded external AutoML experiment",
   },
   {
