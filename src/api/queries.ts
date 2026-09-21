@@ -61,3 +61,12 @@ export function useRestartWorkloadMutation() {
     mutationFn: (input: RestartWorkloadInput) => controlPlane.restartWorkload(input),
   });
 }
+
+
+export function useCapabilities() {
+  return useQuery({
+    queryKey: ["capabilities"],
+    queryFn: () => controlPlane.getCapabilities(),
+    staleTime: 30_000,
+  });
+}
