@@ -203,3 +203,21 @@ export type GoldTableContract = {
   mlDerived: boolean;
   status: "planned" | "available";
 };
+
+
+export type ProviderInventoryItem = {
+  id: string;
+  name: string;
+  category: "compute" | "code" | "cicd" | "lakehouse" | "streaming" | "database" | "ml" | "edge" | "api" | "lab" | "artifacts";
+  state: ArchitectureState;
+  role: string;
+  costIntent: "free-tier" | "no-cost" | "unknown";
+  telemetry: "live" | "partial" | "not-connected";
+  limitsVerified: boolean;
+  detail: string;
+};
+
+export type ProviderInventory = {
+  providers: ProviderInventoryItem[];
+  usageBarsRequireVerifiedLimits: boolean;
+};
