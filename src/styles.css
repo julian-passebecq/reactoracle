@@ -223,3 +223,7 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (max-width: 1200px) {
   .factoryNotice { align-items: flex-start; flex-direction: column; }
 }
+
+.architectureLanes, .factoryLanes { display: grid; gap: 18px; }
+.architectureLane, .factoryLanes > div { display: grid; gap: 8px; }
+.architectureLaneLabel { color: #424242; }
