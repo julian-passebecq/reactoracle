@@ -70,3 +70,20 @@ export function useCapabilities() {
     staleTime: 30_000,
   });
 }
+
+
+export function usePlatformArchitecture() {
+  return useQuery({
+    queryKey: ["platform-architecture"],
+    queryFn: () => controlPlane.getPlatformArchitecture(),
+    staleTime: 300_000,
+  });
+}
+
+export function useGoldCatalog() {
+  return useQuery({
+    queryKey: ["gold-catalog"],
+    queryFn: () => controlPlane.getGoldCatalog(),
+    staleTime: 300_000,
+  });
+}
