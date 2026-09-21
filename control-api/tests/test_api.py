@@ -39,6 +39,22 @@ def test_agent_ingress_requires_configured_token(monkeypatch) -> None:
     assert response.status_code == 503
 
 
+def test_agent_ingress_rejects_wrong_token(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    response = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer wrong-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": "oracle-a1-01",
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    assert response.status_code == 401
+
+
 def test_agent_heartbeat_with_token(monkeypatch) -> None:
     monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
     response = client.post(
