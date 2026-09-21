@@ -25,7 +25,7 @@ export function InfrastructurePage() {
   const infra = infrastructure.data;
   const vm = overview.data.vm;
   return <>
-    <PageHeader title="Infrastructure" subtitle="Oracle Cloud inventory and OpenTofu execution state" actions={<><StatusBadge status={infra.state} /><Button appearance="primary">Run plan</Button></>} />
+    <PageHeader title="Infrastructure" subtitle="Oracle Cloud inventory and OpenTofu execution state" actions={<><StatusBadge status={infra.state} /><Button appearance="primary" disabled>Run plan · planned</Button></>} />
     <section className="metrics metricsThree">
       <Card className="metricCard"><Text size={200}>OpenTofu state</Text><Title3>{infra.state}</Title3><Text className="muted">{infra.managedResources} managed resources</Text></Card>
       <Card className="metricCard"><Text size={200}>Last plan</Text><Title3>{infra.lastPlan}</Title3><Text className="muted">{infra.drift}</Text></Card>
@@ -35,7 +35,7 @@ export function InfrastructurePage() {
       <Card><CardHeader header={<Title3>OCI resources</Title3>} /><dl className="detailsList">
         <div><dt>Instance</dt><dd>{vm.name}</dd></div><div><dt>VCN</dt><dd>{infra.vcn}</dd></div><div><dt>Subnet</dt><dd>{infra.subnet}</dd></div><div><dt>Public IP</dt><dd>{infra.publicIp}</dd></div><div><dt>Boot volume</dt><dd>{infra.bootVolumeGb} GB</dd></div>
       </dl></Card>
-      <Card><CardHeader header={<Title3>Safe IaC workflow</Title3>} /><div className="stackText"><Text>Validate and plan are safe read/review operations. Apply will require explicit approval and an audit record.</Text><div className="quickActions"><Button>Validate</Button><Button appearance="primary">Plan</Button><Button disabled>Apply</Button></div></div></Card>
+      <Card><CardHeader header={<Title3>Safe IaC workflow</Title3>} /><div className="stackText"><Text>Validate and plan are safe read/review operations. Apply will require explicit approval and an audit record.</Text><div className="quickActions"><Button disabled>Validate · planned</Button><Button appearance="primary" disabled>Plan · planned</Button><Button disabled>Apply · approval required</Button></div></div></Card>
     </section>
     <section><div className="sectionHeader"><div><Title3>Recent OpenTofu runs</Title3><Text className="muted">Execution is planned for CI, not as a resident VM service.</Text></div></div>
       <div className="tableWrap"><table><thead><tr><th>Run</th><th>Action</th><th>Status</th><th>Summary</th><th>Duration</th><th>When</th></tr></thead><tbody>{infra.tofuRuns.map((run) => <tr key={run.id}><td>#{run.id}</td><td>{run.action}</td><td><StatusBadge status={run.status} /></td><td>{run.summary}</td><td>{run.duration}</td><td>{run.when}</td></tr>)}</tbody></table></div>
