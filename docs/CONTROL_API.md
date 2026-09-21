@@ -185,3 +185,29 @@ Each provider includes:
 - a short integration note.
 
 `usageBarsRequireVerifiedLimits=true` is a contract invariant. The frontend must not display quota-used percentages until an adapter supplies live usage and a verified current limit.
+
+
+## Platform architecture contracts
+
+ReactOracle keeps the V1 platform design behind Control API contracts rather than hard-wiring live UI components directly to providers.
+
+Read-only endpoints:
+
+```text
+GET /api/v1/platform/architecture
+GET /api/v1/platform/data-factory
+GET /api/v1/platform/gold-catalog
+GET /api/v1/platform/providers
+```
+
+The Data Factory endpoint exposes the planned Contoso -> DuckLake -> Airflow -> Spark -> Gold journey and the optional Kaggle/MLJAR enrichment branch.
+
+V1 invariants enforced by the API models:
+
+- Data Factory execution remains disabled;
+- business React applications remain outside ReactOracle scope;
+- Gold is included in durable output zones;
+- MotherDuck / DuckLake is the canonical durable destination;
+- architecture flows may reference only declared nodes;
+- platform/provider identifiers must remain unique;
+- provider usage bars require verified limits before they can be shown.
