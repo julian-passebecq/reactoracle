@@ -94,3 +94,17 @@ export type Overview = {
   maintenance: MaintenanceSummary;
   activity: ActivityEvent[];
 };
+
+export type AgentHeartbeat = {
+  agentVersion: string;
+  machineId: string;
+  status: Health;
+  k3sReachable: boolean;
+  sentAt: string;
+};
+
+export type AgentStatus = {
+  connected: boolean;
+  lastHeartbeat: AgentHeartbeat | null;
+  lastSnapshotAt: string | null;
+};
