@@ -1,22 +1,55 @@
 # Oracle Ops Agent
 
-The agent is intentionally not implemented yet. This directory fixes its security and deployment boundary before code is added.
+The Oracle Ops Agent is a small Go binary that runs as a systemd service on the Oracle VM and makes outbound authenticated requests to the external Control API.
 
-## Responsibilities
+## Current read-only capabilities
 
-- send outbound heartbeats to the Control API
-- read host inventory and health
-- read K3s workload state through a least-privilege service account
-- execute only allow-listed commands received from the Control API
-- return command results and audit metadata
+- OCI IMDSv2 instance metadata when available
+- hostname and provisioned shape
+- OCPU and RAM
+- sampled host CPU usage
+- host memory usage
+- root filesystem usage
+- uptime
+- K3s version
+- Kubernetes workloads through read-only `kubectl get`
+- namespace/pod readiness
+- OS/kernel/reboot-required state
 
-## Non-responsibilities
+The agent sends:
 
-- no arbitrary shell execution endpoint
-- no public web administration port
-- no browser-facing SSH proxy
-- no storage of OCI/OpenTofu CI credentials
+- `POST /api/v1/agent/heartbeat`
+- `POST /api/v1/agent/snapshot`
 
-## Runtime
+It does **not** expose a server port and does **not** accept arbitrary shell commands.
 
-Target implementation: a small ARM64-friendly Go binary managed by systemd on the Oracle VM.
+## Build for the Oracle Ampere VM
+
+```bash
+cd agent
+GOOS=linux GOARCH=arm64 go build -o reactoracle-agent ./cmd/reactoracle-agent
+```
+
+## Install
+
+Copy the binary plus `reactoracle-agent.service`, `agent.env.example` and `install.sh` to the VM.
+
+```bash
+sudo ./install.sh
+sudo nano /etc/reactoracle/agent.env
+sudo systemctl start reactoracle-agent
+sudo systemctl status reactoracle-agent
+```
+
+## Kubernetes permissions
+
+The current implementation calls local `kubectl get` commands. Before production use, replace the default/root kubeconfig path with a dedicated least-privilege service account and kubeconfig that can only read the resource kinds ReactOracle requires.
+
+## Security boundary
+
+- outbound only
+- bearer token required
+- no generic command endpoint
+- no OCI credentials stored by the agent
+- OpenTofu credentials remain in CI
+- mutating operations are intentionally not implemented yet
