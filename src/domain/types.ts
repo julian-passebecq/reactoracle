@@ -115,7 +115,7 @@ export type AgentStatus = {
   lastSnapshotAt: string | null;
 };
 
-export type CommandName = "vm.health_check" | "k8s.logs";
+export type CommandName = "vm.health_check" | "k8s.logs" | "k8s.restart_workload";
 
 export type CommandArgument = string | number | boolean;
 
@@ -125,7 +125,7 @@ export type CommandRun = {
   command: CommandName;
   arguments: Record<string, CommandArgument>;
   status: "queued" | "running" | "success" | "failed";
-  risk: "safe";
+  risk: "safe" | "moderate";
   createdAt: string;
   completedAt: string | null;
   result: Record<string, unknown> | null;
@@ -150,4 +150,12 @@ export type LogQueryResult = {
   text: string;
   truncated: boolean;
   collectedAt: string;
+};
+
+
+export type RestartWorkloadInput = {
+  machineId: string;
+  namespace: string;
+  name: string;
+  kind: Exclude<Workload["kind"], "Job">;
 };
