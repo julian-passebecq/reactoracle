@@ -1,0 +1,87 @@
+from .models import (
+    ActivityEvent,
+    InfrastructureSummary,
+    MaintenanceSummary,
+    NamespaceSummary,
+    Overview,
+    ServiceSummary,
+    TofuRun,
+    VmSummary,
+    Workload,
+)
+
+
+def build_mock_overview() -> Overview:
+    maintenance = MaintenanceSummary(
+        os="Ubuntu 24.04",
+        kernel="6.x",
+        updatesAvailable=7,
+        securityUpdates=2,
+        rebootRequired=False,
+        unusedImagesGb=2.7,
+        prometheusGb=4.1,
+        lokiGb=2.8,
+        lastBackup="Today 03:00",
+        backupStatus="success",
+    )
+    return Overview(
+        vm=VmSummary(
+            id="oracle-a1-01",
+            name="oracle-a1-01",
+            shape="VM.Standard.A1.Flex",
+            ocpu=2,
+            memoryGb=12,
+            cpuPercent=23,
+            memoryUsedGb=5.9,
+            diskPercent=31,
+            uptime="16d 04h",
+            projectedCost="$0",
+            k3sVersion="v1.34",
+        ),
+        services=[
+            ServiceSummary(id="k3s", name="K3s", category="platform", status="healthy", detail="14 / 14 pods", memoryMb=720),
+            ServiceSummary(id="airflow", name="Airflow", category="data", status="healthy", detail="scheduler healthy", memoryMb=830),
+            ServiceSummary(id="spark", name="Spark", category="data", status="idle", detail="no active application", memoryMb=280),
+            ServiceSummary(id="grafana", name="Grafana", category="monitoring", status="healthy", detail="dashboards available", memoryMb=230),
+            ServiceSummary(id="prometheus", name="Prometheus", category="monitoring", status="healthy", detail="metrics scraping", memoryMb=680),
+            ServiceSummary(id="loki", name="Loki", category="monitoring", status="healthy", detail="logs ingesting", memoryMb=390),
+            ServiceSummary(id="kafka", name="Kafka", category="external", status="healthy", detail="Aiven / external"),
+        ],
+        workloads=[
+            Workload(id="airflow-api", name="airflow-api", namespace="airflow", kind="Deployment", status="Running", cpuMillicores=65, memoryMb=320),
+            Workload(id="airflow-scheduler", name="airflow-scheduler", namespace="airflow", kind="Deployment", status="Running", cpuMillicores=120, memoryMb=510),
+            Workload(id="postgres", name="postgres", namespace="airflow", kind="StatefulSet", status="Running", cpuMillicores=35, memoryMb=420),
+            Workload(id="spark-history", name="spark-history", namespace="spark", kind="Deployment", status="Running", cpuMillicores=30, memoryMb=280),
+            Workload(id="grafana", name="grafana", namespace="monitoring", kind="Deployment", status="Running", cpuMillicores=35, memoryMb=230),
+            Workload(id="prometheus", name="prometheus", namespace="monitoring", kind="StatefulSet", status="Running", cpuMillicores=85, memoryMb=680),
+            Workload(id="loki", name="loki", namespace="monitoring", kind="StatefulSet", status="Running", cpuMillicores=45, memoryMb=390),
+        ],
+        namespaces=[
+            NamespaceSummary(name="airflow", podsReady=3, podsTotal=3, cpuMillicores=220, memoryMb=1250),
+            NamespaceSummary(name="spark", podsReady=1, podsTotal=1, cpuMillicores=30, memoryMb=280),
+            NamespaceSummary(name="monitoring", podsReady=5, podsTotal=5, cpuMillicores=210, memoryMb=1780),
+            NamespaceSummary(name="kube-system", podsReady=5, podsTotal=5, cpuMillicores=140, memoryMb=920),
+        ],
+        infrastructure=InfrastructureSummary(
+            state="synced",
+            managedResources=9,
+            lastPlan="22 min ago",
+            drift="None detected",
+            publicIp="hidden until live connection",
+            bootVolumeGb=100,
+            vcn="oracle-lab",
+            subnet="public-subnet",
+            tofuRuns=[
+                TofuRun(id="42", action="PLAN", status="success", summary="No changes", duration="8 sec", when="Today 16:21"),
+                TofuRun(id="41", action="APPLY", status="success", summary="1 update", duration="27 sec", when="Yesterday"),
+                TofuRun(id="40", action="VALIDATE", status="success", summary="Configuration valid", duration="4 sec", when="Yesterday"),
+            ],
+        ),
+        maintenance=maintenance,
+        activity=[
+            ActivityEvent(id="a1", when="16:42", actor="system", action="Spark job customer-etl completed", status="success"),
+            ActivityEvent(id="a2", when="16:21", actor="julian", action="OpenTofu plan completed: no changes", status="success"),
+            ActivityEvent(id="a3", when="15:51", actor="system", action="2 Ubuntu security updates detected", status="warning"),
+            ActivityEvent(id="a4", when="12:20", actor="airflow", action="dbt build completed", status="success"),
+        ],
+    )
