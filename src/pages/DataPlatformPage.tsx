@@ -72,10 +72,10 @@ export function DataPlatformPage() {
       </Card>
 
       <Card className="platformCard">
-        <div className="cardTop"><Title3>DuckDB / DuckLake</Title3><StatusBadge status="idle" /></div>
-        <Text className="muted">Library/runtime rather than a permanent database daemon</Text>
-        <Text size={200}>Available inside Spark-adjacent, dbt or Polars jobs without consuming idle RAM.</Text>
-        <Button disabled>Job integration later</Button>
+        <div className="cardTop"><Title3>MotherDuck / DuckLake</Title3><StatusBadge status="idle" /></div>
+        <Text className="muted">Planned durable analytical lakehouse outside the Oracle VM</Text>
+        <Text size={200}>Raw, Bronze, Silver, Gold and ML feature tables remain available even when Oracle compute is stopped.</Text>
+        <Button disabled>Lakehouse adapter · planned</Button>
       </Card>
     </div>
   </>;
