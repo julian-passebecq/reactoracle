@@ -51,7 +51,7 @@ export function ProvidersPage() {
 
       <section className="metrics">
         <MetricCard label="Provider inventory" value={String(providers.length)} detail="Compute, data, ML, CI/CD and edge" />
-        <MetricCard label="Live systems" value={String(live)} detail="Active ReactOracle runtime dependencies" />
+        <MetricCard label="Live-role systems" value={String(live)} detail="Architecture lifecycle state; see Overview for runtime health" />
         <MetricCard label="Telemetry connected" value={String(connected)} detail="Live or partial adapters" />
         <MetricCard label="Planned / optional" value={String(planned + optional)} detail={planned + " planned · " + optional + " optional"} />
       </section>
@@ -61,7 +61,7 @@ export function ProvidersPage() {
           <Title3>Quota policy</Title3>
           <Text className="muted">
             Usage percentages are hidden until ReactOracle has both a provider usage adapter and a verified current limit.
-            This prevents stale free-tier documentation from looking like live telemetry.
+            Provider state badges describe architecture lifecycle, not runtime health. This prevents stale free-tier documentation or design intent from looking like live telemetry.
           </Text>
         </div>
         <Badge color={verifiedLimits > 0 ? "success" : "informative"}>
