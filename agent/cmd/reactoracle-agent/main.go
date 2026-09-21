@@ -363,6 +363,14 @@ func executeLogCommand(ctx context.Context, arguments map[string]any) CommandRes
 }
 
 func buildLogCommand(arguments map[string]any) ([]string, map[string]any, error) {
+	for key := range arguments {
+		switch key {
+		case "namespace", "name", "kind", "tail":
+		default:
+			return nil, nil, fmt.Errorf("unsupported log argument %q", key)
+		}
+	}
+
 	namespace, ok := arguments["namespace"].(string)
 	if !ok || !isSafeKubernetesName(namespace) {
 		return nil, nil, errors.New("invalid Kubernetes namespace")
