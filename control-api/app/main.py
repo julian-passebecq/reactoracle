@@ -27,7 +27,7 @@ from .models import (
     Workload,
 )
 from .platform_catalog import build_data_factory_plan, build_gold_catalog, build_platform_architecture, build_provider_inventory
-from .state import CommandStateConflict, store
+from .state import CommandStateConflict, MachineIdentityConflict, store
 
 
 app = FastAPI(
@@ -215,12 +215,24 @@ def command_status(command_id: str) -> CommandRun:
 
 @app.post("/api/v1/agent/heartbeat", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_agent_token)])
 def agent_heartbeat(heartbeat: AgentHeartbeat) -> None:
-    store.record_heartbeat(heartbeat)
+    try:
+        store.record_heartbeat(heartbeat)
+    except MachineIdentityConflict as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Agent machine identity changed from {exc.expected} to {exc.received}.",
+        ) from exc
 
 
 @app.post("/api/v1/agent/snapshot", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_agent_token)])
 def agent_snapshot(snapshot: AgentSnapshot) -> None:
-    store.record_snapshot(snapshot)
+    try:
+        store.record_snapshot(snapshot)
+    except MachineIdentityConflict as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Agent machine identity changed from {exc.expected} to {exc.received}.",
+        ) from exc
 
 
 @app.get("/api/v1/agent/commands/next", response_model=AgentCommand | None, dependencies=[Depends(require_agent_token)])
