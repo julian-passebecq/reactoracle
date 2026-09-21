@@ -298,15 +298,6 @@ class ProviderInventory(BaseModel):
         if len(provider_ids) != len(set(provider_ids)):
             raise ValueError("Provider ids must be unique.")
 
-        if self.usageBarsRequireVerifiedLimits:
-            invalid = [
-                provider.id
-                for provider in self.providers
-                if provider.telemetry == "live" and not provider.limitsVerified
-            ]
-            if invalid:
-                raise ValueError(
-                    "Providers cannot expose live quota telemetry without verified limits: "
-                    + ", ".join(invalid)
-                )
+        if not self.usageBarsRequireVerifiedLimits:
+            raise ValueError("Provider usage bars must require verified provider limits.")
         return self
