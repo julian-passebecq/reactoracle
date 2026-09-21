@@ -21,9 +21,10 @@ from .models import (
     MaintenanceSummary,
     Overview,
     PlatformArchitecture,
+    ProviderInventory,
     Workload,
 )
-from .platform_catalog import build_gold_catalog, build_platform_architecture
+from .platform_catalog import build_gold_catalog, build_platform_architecture, build_provider_inventory
 from .state import store
 
 
@@ -96,6 +97,11 @@ def platform_architecture() -> PlatformArchitecture:
 @app.get("/api/v1/platform/gold-catalog", response_model=list[GoldTableContract])
 def gold_catalog() -> list[GoldTableContract]:
     return build_gold_catalog()
+
+
+@app.get("/api/v1/platform/providers", response_model=ProviderInventory)
+def provider_inventory() -> ProviderInventory:
+    return build_provider_inventory()
 
 
 def mutations_enabled() -> bool:
