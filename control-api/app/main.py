@@ -116,6 +116,10 @@ def capabilities() -> Capabilities:
 
 
 def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> dict[str, str | int]:
+    allowed = {"namespace", "name", "kind", "tail"}
+    if not set(arguments).issubset(allowed):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Log query contains unsupported arguments.")
+
     namespace = arguments.get("namespace")
     name = arguments.get("name")
     kind = arguments.get("kind")
