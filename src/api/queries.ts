@@ -87,3 +87,12 @@ export function useGoldCatalog() {
     staleTime: 300_000,
   });
 }
+
+
+export function useProviderInventory() {
+  return useQuery({
+    queryKey: ["provider-inventory"],
+    queryFn: () => controlPlane.getProviderInventory(),
+    staleTime: 300_000,
+  });
+}
