@@ -66,3 +66,24 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 .errorCard { max-width: 680px; margin: 48px auto; border-color: #d13438; gap: 12px; }
+
+.topologyFlow { display: grid; gap: 18px; }
+.topologyStage { display: grid; gap: 10px; }
+.topologyStageLabel { color: #424242; }
+.topologyCards { display: grid; grid-template-columns: minmax(220px, 1fr) 34px minmax(220px, 1fr) 34px minmax(220px, 1fr); gap: 10px; align-items: stretch; }
+.topologyNode { min-height: 150px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+.topologyArrow, .topologyDown { display: grid; place-items: center; color: #707070; font-size: 22px; }
+.topologyDown { min-height: 20px; }
+.topologyHost { border-color: #b7d7f0; }
+.topologyHostMetrics { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 12px; color: #424242; }
+.topologyNamespace { min-height: 130px; }
+.topologyWorkloadSection { margin: 8px 0 0; }
+.topologyList { display: flex; flex-direction: column; margin-top: 8px; }
+.topologyExternal { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 14px; }
+.emptyState { min-height: 130px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+
+@media (max-width: 1200px) {
+  .topologyCards { grid-template-columns: 1fr; }
+  .topologyArrow { transform: rotate(90deg); min-height: 20px; }
+  .topologyExternal { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+}
