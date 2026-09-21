@@ -13,6 +13,7 @@ export const contosoPlan = {
   scenario: "retail.customer_satisfaction",
   generator: "Contoso Forge Lite",
   seed: 20260904,
+  optional: true,
   scale: {
     orders: 1200,
     customers: 240,
@@ -27,6 +28,7 @@ export const contosoPlan = {
     noiseLevel: 0.1,
     target: "customer dissatisfaction",
     primarySignal: "delivery delay",
+    optional: true,
   },
   output: {
     format: "Parquet",
@@ -35,14 +37,14 @@ export const contosoPlan = {
   },
 };
 
-export const dataFactoryStages: DataFactoryStage[] = [
+export const coreDataFactoryStages: DataFactoryStage[] = [
   {
     id: "generate",
     name: "Generate",
     engine: ".NET / C#",
     location: "Contoso Forge Lite",
     state: "planned",
-    detail: "Deterministic retail source + truth manifest",
+    detail: "Optional deterministic retail source + truth manifest",
   },
   {
     id: "lake-raw",
@@ -58,7 +60,7 @@ export const dataFactoryStages: DataFactoryStage[] = [
     engine: "Airflow",
     location: "Oracle K3s",
     state: "live",
-    detail: "DAG coordinates ingestion, Spark and external stages",
+    detail: "DAG coordinates ingestion and Spark stages",
   },
   {
     id: "process",
@@ -77,19 +79,46 @@ export const dataFactoryStages: DataFactoryStage[] = [
     detail: "Canonical durable analytical tables",
   },
   {
+    id: "consume",
+    name: "Serve Gold",
+    engine: "SQL / BI",
+    location: "External consumers",
+    state: "planned",
+    detail: "Power BI, SQL clients, notebooks and APIs consume Gold",
+  },
+];
+
+export const mlDataFactoryStages: DataFactoryStage[] = [
+  {
+    id: "features",
+    name: "Read Features",
+    engine: "DuckLake",
+    location: "MotherDuck",
+    state: "planned",
+    detail: "Governed ML feature dataset derived from durable analytical data",
+  },
+  {
     id: "train",
     name: "Train",
     engine: "MLJAR",
     location: "Kaggle",
     state: "external",
-    detail: "Bounded external AutoML experiment",
+    detail: "Optional bounded external AutoML experiment",
   },
   {
-    id: "serve",
-    name: "Serve",
-    engine: "SQL / BI",
-    location: "Gold + optional Neon",
+    id: "publish-ml",
+    name: "Publish ML results",
+    engine: "DuckLake",
+    location: "MotherDuck",
     state: "planned",
-    detail: "Expose Gold tables and compact ML serving metadata",
+    detail: "Historical predictions and analytical results return to durable storage",
+  },
+  {
+    id: "serve-ml",
+    name: "Mirror latest state",
+    engine: "PostgreSQL",
+    location: "Optional Neon",
+    state: "planned",
+    detail: "Compact latest predictions / metrics only when a serving use case needs them",
   },
 ];
