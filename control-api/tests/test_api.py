@@ -6,9 +6,17 @@ import pytest
 
 from app.main import app
 from app.models import DurableDataZone, GoldTableContract, PlatformArchitecture, PlatformNode, ProviderInventory, ProviderInventoryItem
+from app.state import store
 
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def reset_control_plane_store():
+    store.reset()
+    yield
+    store.reset()
 
 
 def test_health() -> None:
@@ -17,15 +25,10 @@ def test_health() -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_overview_contract() -> None:
+def test_overview_requires_live_snapshot() -> None:
     response = client.get("/api/v1/overview")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["vm"]["provider"] == "oci"
-    assert body["vm"]["memoryGb"] > 0
-    assert body["vm"]["projectedCost"] == "Not connected"
-    assert isinstance(body["workloads"], list)
-    assert isinstance(body["namespaces"], list)
+    assert response.status_code == 503
+    assert response.json()["detail"] == "No live Oracle agent snapshot has been received yet."
 
 
 def test_agent_ingress_requires_configured_token(monkeypatch) -> None:
@@ -148,6 +151,9 @@ def test_agent_snapshot_updates_read_model(monkeypatch) -> None:
     assert overview["vm"]["cpuPercent"] == 41.2
     assert overview["vm"]["networkRxMbps"] == 2.4
     assert overview["vm"]["diskTotalGb"] == 100
+    assert overview["vm"]["projectedCost"] == "Not connected"
+    assert overview["infrastructure"]["state"] == "unknown"
+    assert overview["infrastructure"]["managedResources"] == 0
     assert overview["workloads"][0]["name"] == "grafana"
 
 
