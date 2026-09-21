@@ -15,6 +15,7 @@ from .models import (
     AgentStatus,
     CommandRequest,
     CommandRun,
+    Capabilities,
     InfrastructureSummary,
     MaintenanceSummary,
     Overview,
@@ -84,6 +85,15 @@ def agent_status() -> AgentStatus:
     return store.get_agent_status()
 
 
+def mutations_enabled() -> bool:
+    return os.getenv("REACTORACLE_ENABLE_MUTATIONS", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+@app.get("/api/v1/capabilities", response_model=Capabilities)
+def capabilities() -> Capabilities:
+    return Capabilities(restartWorkload=mutations_enabled())
+
+
 
 
 def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> dict[str, str | int]:
@@ -139,6 +149,11 @@ def create_command(request: CommandRequest) -> CommandRun:
         return store.create_command(request.machineId, request.command, arguments)
 
     if request.command == "k8s.restart_workload":
+        if not mutations_enabled():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Mutating operations are disabled. Set REACTORACLE_ENABLE_MUTATIONS=true only behind the authenticated control-plane boundary.",
+            )
         arguments = _validated_restart_arguments(request.arguments)
         return store.create_command(request.machineId, request.command, arguments, risk="moderate")
 
