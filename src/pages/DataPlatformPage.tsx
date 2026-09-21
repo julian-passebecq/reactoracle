@@ -5,6 +5,7 @@ import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { runtimeConfig } from "../config";
+import { goldTableCatalog } from "../data/goldCatalog";
 
 const sumMemory = (items: { memoryMb: number }[]) => Math.round(items.reduce((sum, item) => sum + item.memoryMb, 0));
 const sumCpu = (items: { cpuMillicores: number }[]) => Math.round(items.reduce((sum, item) => sum + item.cpuMillicores, 0));
@@ -78,5 +79,34 @@ export function DataPlatformPage() {
         <Button disabled>Lakehouse adapter · planned</Button>
       </Card>
     </div>
+
+    <section className="sectionGap">
+      <div className="sectionHeader">
+        <div>
+          <Title3>Gold serving boundary</Title3>
+          <Text className="muted">
+            ReactOracle publishes durable Gold contracts. Business-specific React dashboards are intentionally outside this product.
+          </Text>
+        </div>
+      </div>
+      <div className="tableWrap">
+        <table>
+          <thead>
+            <tr><th>Table</th><th>Grain</th><th>Purpose</th><th>Consumers</th><th>Storage</th></tr>
+          </thead>
+          <tbody>
+            {goldTableCatalog.map((table) => (
+              <tr key={table.name}>
+                <td className="strongCell mono">{table.name}</td>
+                <td>{table.grain}</td>
+                <td>{table.purpose}</td>
+                <td>{table.consumers.join(", ")}</td>
+                <td>MotherDuck / DuckLake · {table.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </>;
 }
