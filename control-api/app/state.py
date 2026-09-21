@@ -6,7 +6,7 @@ from threading import RLock
 from uuid import uuid4
 
 from .mock_data import build_mock_overview
-from .models import AgentCommand, AgentCommandResult, AgentHeartbeat, AgentSnapshot, AgentStatus, CommandRun, Overview, ServiceSummary
+from .models import AgentCommand, AgentCommandResult, AgentHeartbeat, AgentSnapshot, AgentStatus, CommandName, CommandRun, Overview, ServiceSummary
 
 
 class ControlPlaneStore:
@@ -66,12 +66,18 @@ class ControlPlaneStore:
             )
 
 
-    def create_health_check(self, machine_id: str) -> CommandRun:
+    def create_command(
+        self,
+        machine_id: str,
+        command: CommandName,
+        arguments: dict[str, str | int | float | bool] | None = None,
+    ) -> CommandRun:
         with self._lock:
             run = CommandRun(
                 id=f"cmd_{uuid4().hex}",
                 machineId=machine_id,
-                command="vm.health_check",
+                command=command,
+                arguments=arguments or {},
                 status="queued",
                 createdAt=datetime.now(timezone.utc),
             )
@@ -96,7 +102,7 @@ class ControlPlaneStore:
                 if run.status == "queued" and run.machineId == machine_id:
                     run.status = "running"
                     self._commands[command_id] = run
-                    return AgentCommand(id=run.id, machineId=run.machineId, command=run.command)
+                    return AgentCommand(id=run.id, machineId=run.machineId, command=run.command, arguments=run.arguments)
             return None
 
     def complete_command(self, command_id: str, result: AgentCommandResult) -> CommandRun | None:
