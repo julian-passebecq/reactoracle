@@ -38,7 +38,7 @@ Future source layer: ReactOracle can optionally call a headless Contoso Forge de
 
 The durable analytical plane is MotherDuck / DuckLake. Oracle K3s is compute and orchestration; it is not the canonical home of Raw, Bronze, Silver, Gold or feature data.
 
-The intended complete lineage is:
+The core data-engineering lineage ends at durable Gold:
 
 ```text
 optional Contoso generator
@@ -46,10 +46,17 @@ optional Contoso generator
         -> MotherDuck / DuckLake Raw
         -> Airflow
         -> Spark on K3s
-        -> MotherDuck / DuckLake Bronze/Silver/Gold/features
-        -> Kaggle/MLJAR
-        -> lakehouse history + optional Neon serving metadata
-        -> dbt / BI / SQL consumers
+        -> MotherDuck / DuckLake Bronze / Silver / Gold / Features
+        -> BI / SQL / notebooks / read-only APIs
+```
+
+ML is an optional enrichment branch, not a prerequisite for serving Gold:
+
+```text
+MotherDuck / DuckLake Features
+        -> Kaggle / MLJAR
+        -> historical predictions / analytical results back to DuckLake
+        -> optional compact latest-state / metadata mirror in Neon
 ```
 
 If the Oracle VM is stopped or rebuilt, durable analytical tables must remain available in the external lakehouse.
