@@ -11,11 +11,14 @@ export function HealthCheckControl({ machineId }: Props) {
   const mutation = useHealthCheckMutation();
   const command = useCommandStatus(commandId);
   const status = command.data?.status ?? mutation.data?.status;
+  const error = mutation.error ?? command.error;
   const busy = mutation.isPending || status === "queued" || status === "running";
 
-  const run = async () => {
-    const created = await mutation.mutateAsync(machineId);
-    setCommandId(created.id);
+  const run = () => {
+    setCommandId(null);
+    mutation.mutate(machineId, {
+      onSuccess: (created) => setCommandId(created.id),
+    });
   };
 
   return (
@@ -23,9 +26,17 @@ export function HealthCheckControl({ machineId }: Props) {
       <Button onClick={run} disabled={busy}>
         {busy ? "Checking…" : "Run health check"}
       </Button>
-      {status ? (
+      {error ? (
+        <Text size={200} className="commandFailed">
+          {error instanceof Error ? error.message : "Health check request failed"}
+        </Text>
+      ) : status ? (
         <Text size={200} className={status === "failed" ? "commandFailed" : "muted"}>
-          {status === "success" ? "Health check passed" : status === "failed" ? "Health check failed" : "Health check " + status}
+          {status === "success"
+            ? "Health check passed"
+            : status === "failed"
+              ? "Health check failed"
+              : "Health check " + status}
         </Text>
       ) : null}
     </div>
