@@ -9,8 +9,8 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm install
@@ -24,8 +24,8 @@ jobs:
       run:
         working-directory: control-api
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - run: python -m pip install --upgrade pip
@@ -38,8 +38,8 @@ jobs:
       run:
         working-directory: agent
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.25.x"
       - name: Check Go formatting
@@ -57,7 +57,7 @@ jobs:
           cp ../kubernetes/system/reactoracle-agent-rbac.yaml "$bundle/"
           cp ../kubernetes/system/reactoracle-agent-restart-rbac.yaml "$bundle/"
           (cd "$bundle" && sha256sum reactoracle-agent > SHA256SUMS)
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reactoracle-agent-linux-arm64
           path: /tmp/reactoracle-agent-linux-arm64
@@ -66,8 +66,8 @@ jobs:
   monitoring-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - run: pip install pyyaml
