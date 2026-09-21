@@ -31,3 +31,13 @@ The read endpoints intentionally match the TypeScript contracts in `src/domain/t
 ## Security
 
 The agent ingress requires a bearer token. The browser-facing read API should additionally be protected at the hosting/access layer before production exposure. No generic shell endpoint exists.
+
+
+## Safe browser operations
+
+The current command queue supports only explicitly allow-listed read operations:
+
+- `vm.health_check`
+- `k8s.logs`
+
+Kubernetes log requests are validated before they enter the agent queue. The browser cannot submit arbitrary shell text.
