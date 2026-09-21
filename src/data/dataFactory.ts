@@ -1,4 +1,4 @@
-export type DataFactoryStageState = "planned" | "live" | "external";
+export type DataFactoryStageState = "planned" | "live" | "external" | "optional";
 
 export type DataFactoryStage = {
   id: string;
@@ -118,7 +118,7 @@ export const mlDataFactoryStages: DataFactoryStage[] = [
     name: "Mirror latest state",
     engine: "PostgreSQL",
     location: "Optional Neon",
-    state: "planned",
+    state: "optional",
     detail: "Compact latest predictions / metrics only when a serving use case needs them",
   },
 ];
