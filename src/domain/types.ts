@@ -114,3 +114,15 @@ export type AgentStatus = {
   lastHeartbeat: AgentHeartbeat | null;
   lastSnapshotAt: string | null;
 };
+
+export type CommandRun = {
+  id: string;
+  machineId: string;
+  command: "vm.health_check";
+  status: "queued" | "running" | "success" | "failed";
+  risk: "safe";
+  createdAt: string;
+  completedAt: string | null;
+  result: Record<string, unknown> | null;
+  error: string | null;
+};
