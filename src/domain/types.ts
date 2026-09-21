@@ -223,3 +223,51 @@ export type ProviderInventory = {
   providers: ProviderInventoryItem[];
   usageBarsRequireVerifiedLimits: boolean;
 };
+
+
+export type DataFactoryStageState = "planned" | "live" | "external" | "optional";
+
+export type DataFactoryStage = {
+  id: string;
+  name: string;
+  engine: string;
+  location: string;
+  state: DataFactoryStageState;
+  detail: string;
+};
+
+export type ContosoGenerationPlan = {
+  scenario: string;
+  generator: string;
+  seed: number;
+  optional: boolean;
+  scale: {
+    orders: number;
+    customers: number;
+    products: number;
+    stores: number;
+    days: number;
+  };
+  ml: {
+    profile: string;
+    positiveOutcomeRate: number;
+    signalStrength: number;
+    noiseLevel: number;
+    target: string;
+    primarySignal: string;
+    optional: boolean;
+  };
+  output: {
+    format: "Parquet";
+    destination: "MotherDuck / DuckLake";
+    durableZones: string[];
+  };
+};
+
+export type DataFactoryPlan = {
+  contoso: ContosoGenerationPlan;
+  coreStages: DataFactoryStage[];
+  mlStages: DataFactoryStage[];
+  executionEnabled: boolean;
+  businessReactInScope: boolean;
+};
