@@ -365,3 +365,53 @@ def test_restart_capability_enabled_explicitly(monkeypatch) -> None:
     response = client.get("/api/v1/capabilities")
     assert response.status_code == 200
     assert response.json()["restartWorkload"] is True
+
+
+def test_platform_architecture_contract() -> None:
+    response = client.get("/api/v1/platform/architecture")
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["goldSurvivesVmShutdown"] is True
+    assert body["businessReactInScope"] is False
+
+    nodes = {node["id"]: node for node in body["nodes"]}
+    assert nodes["motherduck"]["durable"] is True
+    assert nodes["motherduck"]["layer"] == "lakehouse"
+    assert nodes["spark"]["durable"] is False
+    assert nodes["airflow"]["location"] == "Oracle K3s"
+
+    known_ids = set(nodes)
+    assert set(body["engineeringFlow"]).issubset(known_ids)
+    assert set(body["mlEnrichmentFlow"]).issubset(known_ids)
+
+    gold_zone = next(zone for zone in body["durableZones"] if zone["name"] == "Gold")
+    assert gold_zone["owner"] == "MotherDuck / DuckLake"
+
+    # Core Gold serving must not depend on Kaggle or Neon.
+    assert "kaggle" not in body["engineeringFlow"]
+    assert "neon" not in body["engineeringFlow"]
+    assert "bi" in body["engineeringFlow"]
+
+    # ML is explicitly a side branch that returns analytical history to the lakehouse.
+    assert body["mlEnrichmentFlow"][0] == "motherduck"
+    assert "kaggle" in body["mlEnrichmentFlow"]
+    assert body["mlEnrichmentFlow"].count("motherduck") == 2
+
+
+def test_gold_catalog_is_durable_and_namespaced() -> None:
+    response = client.get("/api/v1/platform/gold-catalog")
+    assert response.status_code == 200
+    rows = response.json()
+
+    names = [row["name"] for row in rows]
+    assert len(names) == len(set(names))
+    assert all(name.startswith("gold.") for name in names)
+    assert all(row["storage"] == "MotherDuck / DuckLake" for row in rows)
+
+    base_tables = [row for row in rows if not row["mlDerived"]]
+    assert len(base_tables) >= 4
+    assert all(row["status"] == "planned" for row in rows)
+
+    score_table = next(row for row in rows if row["name"] == "gold.customer_scores")
+    assert score_table["mlDerived"] is True
