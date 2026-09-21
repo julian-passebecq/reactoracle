@@ -1,17 +1,6 @@
-export type ArchitectureState = "live" | "external" | "planned" | "optional";
+import type { PlatformArchitecture, PlatformNode } from "../domain/types";
 
-export type ArchitectureNode = {
-  id: string;
-  name: string;
-  layer: "source" | "delivery" | "lakehouse" | "orchestration" | "compute" | "ml" | "serving" | "consumption" | "observability" | "control";
-  state: ArchitectureState;
-  provider: string;
-  role: string;
-  durable: boolean;
-  location: string;
-};
-
-export const architectureNodes: ArchitectureNode[] = [
+export const architectureNodes: PlatformNode[] = [
   {
     id: "contoso",
     name: "Contoso Forge Lite",
@@ -146,3 +135,13 @@ export const durableDataZones = [
   { name: "Features", owner: "MotherDuck / DuckLake", purpose: "ML-ready feature datasets derived from governed data" },
   { name: "ML results", owner: "MotherDuck / DuckLake", purpose: "Historical predictions and analytical model outputs; Neon may mirror compact latest-state views" },
 ];
+
+
+export const platformArchitectureMock: PlatformArchitecture = {
+  nodes: architectureNodes,
+  engineeringFlow,
+  mlEnrichmentFlow,
+  durableZones: durableDataZones,
+  goldSurvivesVmShutdown: true,
+  businessReactInScope: false,
+};
