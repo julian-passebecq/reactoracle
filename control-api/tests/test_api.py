@@ -419,6 +419,7 @@ def test_platform_architecture_contract() -> None:
     assert body["mlEnrichmentFlow"][0] == "motherduck"
     assert "kaggle" in body["mlEnrichmentFlow"]
     assert body["mlEnrichmentFlow"].count("motherduck") == 2
+    assert "neon" not in body["mlEnrichmentFlow"]
 
 
 def test_gold_catalog_is_durable_and_namespaced() -> None:
