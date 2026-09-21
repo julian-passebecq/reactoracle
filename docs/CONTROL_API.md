@@ -122,3 +122,24 @@ The first non-health command is a bounded read-only log operation:
 Validation is duplicated at the Control API and agent boundaries. Allowed kinds are Deployment, StatefulSet, DaemonSet and Job. Namespace and workload names must match Kubernetes-safe lowercase names. Tail is restricted to 10-500 lines. The agent executes a fixed `kubectl logs` command and caps the response size.
 
 This preserves the outbound-only design while giving the React UI a useful live log viewer before Loki/Grafana integration is complete.
+
+
+### Workload restart
+
+`k8s.restart_workload` is implemented as a moderate-risk command and is disabled by default.
+
+```json
+{
+  "command": "k8s.restart_workload",
+  "machineId": "oracle-a1-01",
+  "arguments": {
+    "namespace": "airflow",
+    "name": "airflow-scheduler",
+    "kind": "Deployment"
+  }
+}
+```
+
+Only Deployment, StatefulSet and DaemonSet are accepted. Extra arguments are rejected. The agent constructs a fixed `kubectl rollout restart` invocation; it never accepts a shell fragment from the browser.
+
+Enablement requires both the Control API capability flag and the separate Kubernetes restart RBAC overlay. `GET /api/v1/capabilities` exposes whether restart is currently enabled at the API layer.
