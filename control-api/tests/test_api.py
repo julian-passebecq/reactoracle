@@ -187,3 +187,86 @@ def test_agent_only_leases_commands_for_its_machine(monkeypatch) -> None:
         headers={"Authorization": "Bearer test-token"},
     )
     assert response.status_code == 204
+
+
+def test_k8s_log_command_round_trip(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+
+    created = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.logs",
+            "machineId": "oracle-log-test",
+            "arguments": {
+                "namespace": "airflow",
+                "name": "airflow-scheduler",
+                "kind": "Deployment",
+                "tail": 120,
+            },
+        },
+    )
+    assert created.status_code == 202
+    command = created.json()
+    assert command["status"] == "queued"
+    assert command["command"] == "k8s.logs"
+    assert command["arguments"]["tail"] == 120
+
+    leased = client.get(
+        "/api/v1/agent/commands/next",
+        params={"machineId": "oracle-log-test"},
+        headers={"Authorization": "Bearer test-token"},
+    )
+    assert leased.status_code == 200
+    assert leased.json()["arguments"]["namespace"] == "airflow"
+    assert leased.json()["arguments"]["kind"] == "Deployment"
+
+    completed = client.post(
+        f"/api/v1/agent/commands/{command['id']}/result",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "status": "success",
+            "result": {
+                "namespace": "airflow",
+                "workload": "airflow-scheduler",
+                "kind": "Deployment",
+                "lineCount": 2,
+                "text": "line one\nline two\n",
+            },
+        },
+    )
+    assert completed.status_code == 200
+    assert completed.json()["result"]["lineCount"] == 2
+
+
+def test_k8s_log_command_rejects_unsafe_target() -> None:
+    response = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.logs",
+            "machineId": "oracle-log-test",
+            "arguments": {
+                "namespace": "airflow;rm -rf /",
+                "name": "scheduler",
+                "kind": "Deployment",
+                "tail": 100,
+            },
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_k8s_log_command_caps_tail() -> None:
+    response = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.logs",
+            "machineId": "oracle-log-test",
+            "arguments": {
+                "namespace": "airflow",
+                "name": "scheduler",
+                "kind": "Deployment",
+                "tail": 5000,
+            },
+        },
+    )
+    assert response.status_code == 422
