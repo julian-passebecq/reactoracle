@@ -60,7 +60,7 @@ class MockControlPlaneClient implements ControlPlaneClient {
 
   async getRecentCommands() {
     await delay(80);
-    return Array.from(this.commands.values()).toReversed().map((run) => ({ ...run }));
+    return Array.from(this.commands.values()).reverse().map((run) => ({ ...run }));
   }
 }
 
