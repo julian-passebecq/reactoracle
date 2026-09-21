@@ -243,3 +243,32 @@ func TestParseHumanBytes(t *testing.T) {
 		t.Fatal("expected invalid size to return an error")
 	}
 }
+
+
+func TestApplyPodRestartCountsUsesLongestWorkloadPrefix(t *testing.T) {
+	workloads := []Workload{
+		{Name: "airflow", Namespace: "airflow"},
+		{Name: "airflow-scheduler", Namespace: "airflow"},
+	}
+	var pods podList
+	var pod podItem
+	pod.Metadata.Name = "airflow-scheduler-7d94abcd-x1"
+	pod.Metadata.Namespace = "airflow"
+	pod.Status.ContainerStatuses = []struct {
+		Ready        bool `json:"ready"`
+		RestartCount int  `json:"restartCount"`
+	}{
+		{Ready: true, RestartCount: 3},
+		{Ready: true, RestartCount: 1},
+	}
+	pods.Items = []podItem{pod}
+
+	applyPodRestartCounts(workloads, pods)
+
+	if workloads[0].Restarts != 0 {
+		t.Fatalf("shorter prefix received restarts: %+v", workloads[0])
+	}
+	if workloads[1].Restarts != 4 {
+		t.Fatalf("scheduler restarts = %d, want 4", workloads[1].Restarts)
+	}
+}
