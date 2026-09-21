@@ -13,12 +13,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: npm install
-      - name: Emit lockfile bootstrap
-        run: |
-          echo "REACTORACLE_LOCKFILE_BEGIN"
-          cat package-lock.json
-          echo "REACTORACLE_LOCKFILE_END"
+      - run: npm ci
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
       - run: npm run build
