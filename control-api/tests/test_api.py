@@ -23,6 +23,7 @@ def test_overview_contract() -> None:
     body = response.json()
     assert body["vm"]["provider"] == "oci"
     assert body["vm"]["memoryGb"] > 0
+    assert body["vm"]["projectedCost"] == "Not connected"
     assert isinstance(body["workloads"], list)
     assert isinstance(body["namespaces"], list)
 
@@ -879,3 +880,35 @@ def test_recent_command_limit_is_bounded() -> None:
 
     too_large = client.get("/api/v1/commands", params={"limit": 101})
     assert too_large.status_code == 422
+
+
+def test_data_factory_ml_parameters_are_bounded() -> None:
+    from app.models import ContosoMlPlan
+
+    for field, value in (
+        ("positiveOutcomeRate", 1.1),
+        ("signalStrength", -0.1),
+        ("noiseLevel", 2.0),
+    ):
+        kwargs = {
+            "profile": "causal-v1",
+            "positiveOutcomeRate": 0.1,
+            "signalStrength": 0.5,
+            "noiseLevel": 0.1,
+            "target": "customer dissatisfaction",
+            "primarySignal": "delivery delay",
+        }
+        kwargs[field] = value
+        with pytest.raises(ValidationError):
+            ContosoMlPlan(**kwargs)
+
+
+def test_data_factory_output_rejects_duplicate_durable_zones() -> None:
+    from app.models import ContosoOutputPlan
+
+    with pytest.raises(ValidationError):
+        ContosoOutputPlan(
+            format="Parquet",
+            destination="MotherDuck / DuckLake",
+            durableZones=["Raw", "Gold", "Gold"],
+        )
