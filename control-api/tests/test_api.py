@@ -1198,3 +1198,33 @@ def test_k8s_namespace_validation_rejects_dns_subdomain_style_namespace() -> Non
         },
     )
     assert response.status_code == 422
+
+
+def test_command_rejected_when_agent_identity_is_known_but_offline(monkeypatch) -> None:
+    from datetime import timedelta
+
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    stale = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+    response = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": "oracle-offline",
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": stale,
+        },
+    )
+    assert response.status_code == 204
+
+    created = client.post(
+        "/api/v1/commands",
+        json={"command": "vm.health_check", "machineId": "oracle-offline"},
+    )
+    assert created.status_code == 409
+    assert "not currently connected" in created.json()["detail"]
+
+    commands = client.get("/api/v1/commands")
+    assert commands.status_code == 200
+    assert commands.json() == []
