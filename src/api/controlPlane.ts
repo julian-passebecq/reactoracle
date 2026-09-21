@@ -58,7 +58,7 @@ class MockControlPlaneClient implements ControlPlaneClient {
   async getWorkloads() { await delay(); return overviewMock.workloads; }
   async getInfrastructure() { await delay(); return overviewMock.infrastructure; }
   async getMaintenance() { await delay(); return overviewMock.maintenance; }
-  async getAgentStatus() { await delay(); return { connected: false, lastHeartbeat: null, lastSnapshotAt: null }; }
+  async getAgentStatus() { await delay(); return { connected: false, snapshotFresh: false, lastHeartbeat: null, lastSnapshotAt: null }; }
   async getCapabilities() { await delay(); return { restartWorkload: true }; }
   async getPlatformArchitecture() { await delay(); return platformArchitectureMock; }
   async getGoldCatalog() { await delay(); return goldTableCatalog; }
