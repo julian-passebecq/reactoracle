@@ -66,6 +66,8 @@ Oracle VM
 
 The agent currently collects OCI shape metadata, OCPU/RAM, CPU usage, memory usage, root disk utilization, uptime, K3s version, Kubernetes workload inventory, namespace readiness, OS/kernel and reboot-required state.
 
+A lightweight K3s observability bundle is also checked in under `kubernetes/monitoring/`: kube-prometheus-stack, Grafana, Loki and Grafana Alloy, with short retention and resource limits sized for the small Oracle lab.
+
 ## Frontend
 
 ```bash
@@ -145,5 +147,6 @@ See:
 - `docs/CONTROL_API.md`
 - `docs/ROADMAP.md`
 - `docs/DEPLOYMENT.md`
+- `docs/MONITORING.md`
 - `agent/README.md`
 - `kubernetes/README.md`
