@@ -37,6 +37,12 @@ def build_mock_overview() -> Overview:
             uptime="16d 04h",
             projectedCost="$0",
             k3sVersion="v1.34",
+            swapUsedGb=0,
+            load1=0.42,
+            diskUsedGb=31,
+            diskTotalGb=100,
+            networkRxMbps=1.8,
+            networkTxMbps=0.6,
         ),
         services=[
             ServiceSummary(id="k3s", name="K3s", category="platform", status="healthy", detail="14 / 14 pods", memoryMb=720),
