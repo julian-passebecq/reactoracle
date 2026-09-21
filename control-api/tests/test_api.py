@@ -961,3 +961,36 @@ def test_agent_heartbeat_rejects_naive_timestamp(monkeypatch) -> None:
         },
     )
     assert response.status_code == 422
+
+
+def test_agent_rejects_machine_identity_switch(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    now = datetime.now(timezone.utc).isoformat()
+
+    first = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": "oracle-primary",
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": now,
+        },
+    )
+    assert first.status_code == 204
+
+    switched = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": "oracle-other",
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": now,
+        },
+    )
+    assert switched.status_code == 409
+    assert "oracle-primary" in switched.json()["detail"]
+    assert "oracle-other" in switched.json()["detail"]
