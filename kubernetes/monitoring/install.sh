@@ -20,22 +20,15 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo add grafana https://grafana.github.io/helm-charts >/dev/null 2>&1 || true
 helm repo update
 
-helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-  --namespace "$NAMESPACE" \
-  --values "$ROOT_DIR/kube-prometheus-stack-values.yaml" \
-  --wait --timeout 10m
+helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack   --namespace "$NAMESPACE"   --values "$ROOT_DIR/kube-prometheus-stack-values.yaml"   --wait --timeout 10m
 
-helm upgrade --install loki grafana/loki \
-  --namespace "$NAMESPACE" \
-  --values "$ROOT_DIR/loki-values.yaml" \
-  --wait --timeout 10m
+helm upgrade --install loki grafana/loki   --namespace "$NAMESPACE"   --values "$ROOT_DIR/loki-values.yaml"   --wait --timeout 10m
 
-helm upgrade --install alloy grafana/alloy \
-  --namespace "$NAMESPACE" \
-  --values "$ROOT_DIR/alloy-values.yaml" \
-  --wait --timeout 10m
+helm upgrade --install alloy grafana/alloy   --namespace "$NAMESPACE"   --values "$ROOT_DIR/alloy-values.yaml"   --wait --timeout 10m
 
-kubectl apply -f "$ROOT_DIR/grafana-datasources.yaml"
+kubectl apply -f "$ROOT_DIR/dashboard-oracle-vm.yaml"
+kubectl apply -f "$ROOT_DIR/dashboard-kubernetes.yaml"
+kubectl apply -f "$ROOT_DIR/dashboard-logs.yaml"
 
 echo
 echo "Monitoring stack installed."
