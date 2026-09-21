@@ -4,11 +4,11 @@ import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import type { ArchitectureState, ProviderInventoryItem } from "../domain/types";
 
-const stateColor: Record<ArchitectureState, "success" | "informative" | "warning" | "subtle"> = {
-  live: "success",
-  external: "informative",
-  planned: "warning",
-  optional: "subtle",
+const statePresentation: Record<ArchitectureState, { color: "success" | "informative" | "warning" | "subtle"; label: string }> = {
+  live: { color: "success", label: "Implemented" },
+  external: { color: "informative", label: "External" },
+  planned: { color: "warning", label: "Planned" },
+  optional: { color: "subtle", label: "Optional" },
 };
 
 const telemetryLabel: Record<ProviderInventoryItem["telemetry"], string> = {
@@ -78,7 +78,7 @@ export function ProvidersPage() {
                   <Title3>{provider.name}</Title3>
                   <Text size={200} className="muted">{provider.category}</Text>
                 </div>
-                <Badge color={stateColor[provider.state]}>{provider.state}</Badge>
+                <Badge color={statePresentation[provider.state].color}>{statePresentation[provider.state].label}</Badge>
               </div>
 
               <Text>{provider.role}</Text>
