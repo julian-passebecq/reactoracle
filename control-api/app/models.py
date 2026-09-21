@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 
 Health = Literal["healthy", "idle", "warning", "offline"]
-CommandName = Literal["vm.health_check", "k8s.logs"]
+CommandName = Literal["vm.health_check", "k8s.logs", "k8s.restart_workload"]
 CommandArgument = str | int | float | bool
 
 
@@ -166,7 +166,7 @@ class CommandRun(BaseModel):
     command: CommandName
     arguments: dict[str, CommandArgument] = Field(default_factory=dict)
     status: Literal["queued", "running", "success", "failed"]
-    risk: Literal["safe"] = "safe"
+    risk: Literal["safe", "moderate"] = "safe"
     createdAt: datetime
     completedAt: datetime | None = None
     result: dict[str, object] | None = None
