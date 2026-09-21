@@ -145,6 +145,13 @@ def _require_known_machine(machine_id: str) -> None:
             detail=f"Command targets {machine_id}, but the connected Oracle machine is {known_machine}.",
         )
 
+    status_snapshot = store.get_agent_status()
+    if not status_snapshot.connected:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Oracle agent is not currently connected; refusing to queue a command for later execution.",
+        )
+
 
 def _require_known_workload(
     machine_id: str,
@@ -182,7 +189,7 @@ def capabilities() -> Capabilities:
 def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> dict[str, str | int]:
     allowed = {"namespace", "name", "kind", "tail"}
     if not set(arguments).issubset(allowed):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Log query contains unsupported arguments.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Log query contains unsupported arguments.")
 
     namespace = arguments.get("namespace")
     name = arguments.get("name")
@@ -190,19 +197,19 @@ def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> 
     tail_value = arguments.get("tail", 100)
 
     if not isinstance(namespace, str) or len(namespace) > 63 or not K8S_NAMESPACE.fullmatch(namespace):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes namespace.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid Kubernetes namespace.")
     if not isinstance(name, str) or len(name) > 253 or not K8S_NAME.fullmatch(name):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes workload name.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid Kubernetes workload name.")
     if not isinstance(kind, str) or kind not in LOG_KINDS:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported Kubernetes workload kind.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Unsupported Kubernetes workload kind.")
     if isinstance(tail_value, bool):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="tail must be an integer.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="tail must be an integer.")
     try:
         tail = int(tail_value)
     except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="tail must be an integer.") from None
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="tail must be an integer.") from None
     if tail < 10 or tail > 500:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="tail must be between 10 and 500 lines.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="tail must be between 10 and 500 lines.")
 
     return {"namespace": namespace, "name": name, "kind": kind, "tail": tail}
 
@@ -213,13 +220,13 @@ def _validated_restart_arguments(arguments: dict[str, str | int | float | bool])
     kind = arguments.get("kind")
 
     if not isinstance(namespace, str) or not K8S_NAME.fullmatch(namespace):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes namespace.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid Kubernetes namespace.")
     if not isinstance(name, str) or not K8S_NAME.fullmatch(name):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes workload name.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid Kubernetes workload name.")
     if not isinstance(kind, str) or kind not in RESTART_KINDS:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported restart workload kind.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Unsupported restart workload kind.")
     if set(arguments) != {"namespace", "name", "kind"}:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Restart accepts only namespace, name and kind.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Restart accepts only namespace, name and kind.")
 
     return {"namespace": namespace, "name": name, "kind": kind}
 
@@ -228,7 +235,7 @@ def _validated_restart_arguments(arguments: dict[str, str | int | float | bool])
 def create_command(request: CommandRequest) -> CommandRun:
     if request.command == "vm.health_check":
         if request.arguments:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="vm.health_check does not accept arguments.")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="vm.health_check does not accept arguments.")
         _require_known_machine(request.machineId)
         return store.create_command(request.machineId, request.command)
 
