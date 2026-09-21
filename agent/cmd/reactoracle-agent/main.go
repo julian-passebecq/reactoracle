@@ -175,10 +175,14 @@ func runOnce(client *http.Client, cfg Config) {
 	workloads, namespaces, k3sReachable := collectKubernetes(ctx)
 	maintenance := collectMaintenance()
 
+	agentStatus := "healthy"
+	if !k3sReachable {
+		agentStatus = "warning"
+	}
 	heartbeat := Heartbeat{
 		AgentVersion: agentVersion,
 		MachineID: host.ID,
-		Status: "healthy",
+		Status: agentStatus,
 		K3sReachable: k3sReachable,
 		SentAt: time.Now().UTC(),
 	}
