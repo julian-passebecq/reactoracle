@@ -18,9 +18,9 @@ export function OverviewPage() {
   if (overviewQuery.isError || !overviewQuery.data) return <DataError error={overviewQuery.error} onRetry={() => overviewQuery.refetch()} />;
   const data = overviewQuery.data;
   const vm = data.vm;
-  const agentLabel = runtimeConfig.mode === "mock" ? "Mock data" : agentQuery.data?.connected ? "Agent connected" : "Agent offline";
+  const agentLabel = runtimeConfig.mode === "mock" ? "Mock data" : !agentQuery.data?.connected ? "Agent offline" : agentQuery.data.snapshotFresh ? "Agent connected" : "Snapshot stale";
   const agentDetail = runtimeConfig.mode === "mock" ? "Set VITE_CONTROL_API_BASE_URL for live mode" : agentQuery.data?.lastSnapshotAt ?? "No snapshot received";
-  const platformHealth = derivePlatformHealth(data, agentQuery.data?.connected, runtimeConfig.mode);
+  const platformHealth = derivePlatformHealth(data, agentQuery.data?.connected, agentQuery.data?.snapshotFresh, runtimeConfig.mode);
   const issues = healthIssues(data);
   return <>
     <PageHeader title="Oracle data lab" subtitle={vm.shape + " · " + vm.ocpu + " OCPU · " + vm.memoryGb + " GB RAM · K3s " + vm.k3sVersion} actions={<><StatusBadge status={platformHealth} /><Text>{vm.name}</Text></>} />
