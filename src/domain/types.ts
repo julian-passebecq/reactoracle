@@ -164,3 +164,42 @@ export type RestartWorkloadInput = {
 export type Capabilities = {
   restartWorkload: boolean;
 };
+
+
+export type ArchitectureState = "live" | "external" | "planned" | "optional";
+
+export type PlatformNode = {
+  id: string;
+  name: string;
+  layer: "source" | "delivery" | "lakehouse" | "orchestration" | "compute" | "ml" | "serving" | "consumption" | "observability" | "control";
+  state: ArchitectureState;
+  provider: string;
+  role: string;
+  durable: boolean;
+  location: string;
+};
+
+export type DurableDataZone = {
+  name: string;
+  owner: string;
+  purpose: string;
+};
+
+export type PlatformArchitecture = {
+  nodes: PlatformNode[];
+  engineeringFlow: string[];
+  mlEnrichmentFlow: string[];
+  durableZones: DurableDataZone[];
+  goldSurvivesVmShutdown: boolean;
+  businessReactInScope: boolean;
+};
+
+export type GoldTableContract = {
+  name: string;
+  grain: string;
+  purpose: string;
+  consumers: string[];
+  storage: string;
+  mlDerived: boolean;
+  status: "planned" | "available";
+};
