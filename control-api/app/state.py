@@ -9,6 +9,9 @@ from .mock_data import build_live_overview_template
 from .models import AgentCommand, AgentCommandResult, AgentHeartbeat, AgentSnapshot, AgentStatus, CommandName, CommandRun, Overview, ServiceSummary
 
 
+COMMAND_QUEUE_TTL_SECONDS = 120
+
+
 class CommandStateConflict(RuntimeError):
     def __init__(self, current_status: str) -> None:
         super().__init__(current_status)
@@ -106,6 +109,7 @@ class ControlPlaneStore:
         command: CommandName,
         arguments: dict[str, str | int | float | bool] | None = None,
         risk: str = "safe",
+        created_at: datetime | None = None,
     ) -> CommandRun:
         with self._lock:
             run = CommandRun(
@@ -115,7 +119,7 @@ class ControlPlaneStore:
                 arguments=arguments or {},
                 status="queued",
                 risk=risk,
-                createdAt=datetime.now(timezone.utc),
+                createdAt=created_at or datetime.now(timezone.utc),
             )
             self._commands[run.id] = run
             self._command_order.append(run.id)
@@ -131,14 +135,25 @@ class ControlPlaneStore:
             ids = self._command_order[-max(1, min(limit, 100)):]
             return [deepcopy(self._commands[item]) for item in reversed(ids)]
 
-    def lease_next_command(self, machine_id: str) -> AgentCommand | None:
+    def lease_next_command(self, machine_id: str, now: datetime | None = None) -> AgentCommand | None:
         with self._lock:
+            lease_time = now or datetime.now(timezone.utc)
             for command_id in self._command_order:
                 run = self._commands[command_id]
-                if run.status == "queued" and run.machineId == machine_id:
-                    run.status = "running"
+                if run.status != "queued" or run.machineId != machine_id:
+                    continue
+
+                age_seconds = (lease_time - run.createdAt).total_seconds()
+                if age_seconds > COMMAND_QUEUE_TTL_SECONDS:
+                    run.status = "failed"
+                    run.error = "Command expired before the agent leased it."
+                    run.completedAt = lease_time
                     self._commands[command_id] = run
-                    return AgentCommand(id=run.id, machineId=run.machineId, command=run.command, arguments=run.arguments)
+                    continue
+
+                run.status = "running"
+                self._commands[command_id] = run
+                return AgentCommand(id=run.id, machineId=run.machineId, command=run.command, arguments=run.arguments)
             return None
 
     def complete_command(self, command_id: str, result: AgentCommandResult) -> CommandRun | None:
