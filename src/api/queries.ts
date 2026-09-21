@@ -16,3 +16,7 @@ export function useInfrastructure() {
 export function useMaintenance() {
   return useQuery({ queryKey: ["maintenance"], queryFn: () => controlPlane.getMaintenance(), staleTime: 30_000 });
 }
+
+export function useAgentStatus() {
+  return useQuery({ queryKey: ["agent-status"], queryFn: () => controlPlane.getAgentStatus(), refetchInterval: 15_000 });
+}
