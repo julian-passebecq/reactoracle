@@ -56,3 +56,25 @@ jobs:
           name: reactoracle-agent-linux-arm64
           path: /tmp/reactoracle-agent-linux-arm64
           if-no-files-found: error
+
+  monitoring-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pyyaml
+      - name: Validate monitoring YAML
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          root = Path("kubernetes/monitoring")
+          for path in sorted(root.glob("*.yaml")):
+              with path.open("r", encoding="utf-8") as handle:
+                  list(yaml.safe_load_all(handle))
+              print("validated", path)
+          PY
+      - name: Validate monitoring installer shell syntax
+        run: bash -n kubernetes/monitoring/install.sh
