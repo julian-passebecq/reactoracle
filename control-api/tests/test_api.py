@@ -1126,3 +1126,75 @@ def test_agent_command_result_payload_is_bounded(monkeypatch) -> None:
         json={"status": "success", "result": {"ok": True}},
     )
     assert completed.status_code == 200
+
+
+def test_small_future_clock_skew_is_tolerated(monkeypatch) -> None:
+    from datetime import timedelta
+
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    future = (datetime.now(timezone.utc) + timedelta(seconds=15)).isoformat()
+    response = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": "oracle-small-skew",
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": future,
+        },
+    )
+    assert response.status_code == 204
+    status_response = client.get("/api/v1/agent/status")
+    assert status_response.status_code == 200
+    assert status_response.json()["connected"] is True
+
+
+def test_command_rejects_unknown_machine(monkeypatch) -> None:
+    connect_agent(monkeypatch, "oracle-primary")
+    response = client.post(
+        "/api/v1/commands",
+        json={"command": "vm.health_check", "machineId": "oracle-other"},
+    )
+    assert response.status_code == 409
+    assert "oracle-primary" in response.json()["detail"]
+
+
+def test_k8s_command_requires_known_fresh_workload(monkeypatch) -> None:
+    connect_agent(
+        monkeypatch,
+        "oracle-workload-check",
+        workload=("airflow", "airflow-scheduler", "Deployment"),
+    )
+
+    unknown = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.logs",
+            "machineId": "oracle-workload-check",
+            "arguments": {
+                "namespace": "airflow",
+                "name": "not-in-snapshot",
+                "kind": "Deployment",
+                "tail": 100,
+            },
+        },
+    )
+    assert unknown.status_code == 404
+
+
+def test_k8s_namespace_validation_rejects_dns_subdomain_style_namespace() -> None:
+    response = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.logs",
+            "machineId": "oracle-log-test",
+            "arguments": {
+                "namespace": "monitoring.v1",
+                "name": "grafana",
+                "kind": "Deployment",
+                "tail": 100,
+            },
+        },
+    )
+    assert response.status_code == 422
