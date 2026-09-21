@@ -32,6 +32,7 @@ app = FastAPI(
 origins = [item.strip() for item in os.getenv("REACTORACLE_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if item.strip()]
 K8S_NAME = re.compile(r"^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$")
 LOG_KINDS = {"Deployment", "StatefulSet", "DaemonSet", "Job"}
+RESTART_KINDS = {"Deployment", "StatefulSet", "DaemonSet"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -110,6 +111,23 @@ def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> 
 
 
 @app.post("/api/v1/commands", response_model=CommandRun, status_code=status.HTTP_202_ACCEPTED)
+def _validated_restart_arguments(arguments: dict[str, str | int | float | bool]) -> dict[str, str]:
+    namespace = arguments.get("namespace")
+    name = arguments.get("name")
+    kind = arguments.get("kind")
+
+    if not isinstance(namespace, str) or not K8S_NAME.fullmatch(namespace):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes namespace.")
+    if not isinstance(name, str) or not K8S_NAME.fullmatch(name):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes workload name.")
+    if not isinstance(kind, str) or kind not in RESTART_KINDS:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported restart workload kind.")
+    if set(arguments) != {"namespace", "name", "kind"}:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Restart accepts only namespace, name and kind.")
+
+    return {"namespace": namespace, "name": name, "kind": kind}
+
+
 def create_command(request: CommandRequest) -> CommandRun:
     if request.command == "vm.health_check":
         if request.arguments:
@@ -119,6 +137,10 @@ def create_command(request: CommandRequest) -> CommandRun:
     if request.command == "k8s.logs":
         arguments = _validated_log_arguments(request.arguments)
         return store.create_command(request.machineId, request.command, arguments)
+
+    if request.command == "k8s.restart_workload":
+        arguments = _validated_restart_arguments(request.arguments)
+        return store.create_command(request.machineId, request.command, arguments, risk="moderate")
 
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported command.")
 
