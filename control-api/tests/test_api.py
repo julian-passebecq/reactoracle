@@ -129,3 +129,61 @@ def test_agent_snapshot_updates_read_model(monkeypatch) -> None:
     assert overview["vm"]["networkRxMbps"] == 2.4
     assert overview["vm"]["diskTotalGb"] == 100
     assert overview["workloads"][0]["name"] == "grafana"
+
+
+def test_safe_health_check_command_round_trip(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+
+    created = client.post(
+        "/api/v1/commands",
+        json={"command": "vm.health_check", "machineId": "oracle-command-test"},
+    )
+    assert created.status_code == 202
+    command = created.json()
+    assert command["status"] == "queued"
+    assert command["risk"] == "safe"
+
+    leased = client.get(
+        "/api/v1/agent/commands/next",
+        params={"machineId": "oracle-command-test"},
+        headers={"Authorization": "Bearer test-token"},
+    )
+    assert leased.status_code == 200
+    assert leased.json()["id"] == command["id"]
+    assert leased.json()["command"] == "vm.health_check"
+
+    running = client.get(f"/api/v1/commands/{command['id']}")
+    assert running.status_code == 200
+    assert running.json()["status"] == "running"
+
+    completed = client.post(
+        f"/api/v1/agent/commands/{command['id']}/result",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "status": "success",
+            "result": {
+                "k3sReachable": True,
+                "workloadCount": 7,
+                "namespaceCount": 4,
+            },
+        },
+    )
+    assert completed.status_code == 200
+    assert completed.json()["status"] == "success"
+    assert completed.json()["result"]["k3sReachable"] is True
+
+
+def test_agent_only_leases_commands_for_its_machine(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    created = client.post(
+        "/api/v1/commands",
+        json={"command": "vm.health_check", "machineId": "oracle-other"},
+    )
+    assert created.status_code == 202
+
+    response = client.get(
+        "/api/v1/agent/commands/next",
+        params={"machineId": "oracle-different"},
+        headers={"Authorization": "Bearer test-token"},
+    )
+    assert response.status_code == 204
