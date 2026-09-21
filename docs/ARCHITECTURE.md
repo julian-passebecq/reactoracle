@@ -28,7 +28,7 @@ The agent may read host/systemd/apt/storage state, the K3s Kubernetes API, and O
 
 ## Workload strategy
 
-Persistent: K3s, Airflow, Grafana, Prometheus, Loki, Spark History Server, Headlamp and initially PostgreSQL.
+Persistent on Oracle when enabled: K3s, Airflow, Grafana, Prometheus, Loki, Spark History Server, Headlamp and the Airflow metadata database. Business analytical data is not persisted there as its canonical copy.
 
 Ephemeral Kubernetes Jobs: Spark applications, dbt, Polars and maintenance jobs.
 
@@ -81,7 +81,7 @@ V1 exposes this architecture and capability model; generator execution is a late
 
 The future Data Factory / source layer is documented in `docs/DATA_FACTORY_ROADMAP.md`. The Gold serving boundary is documented in `docs/GOLD_SERVING.md`. Business-specific React dashboards are outside this repository; ReactOracle serves and exposes Gold rather than implementing the consuming application.
 
-The first implementation is UI-first with typed mock data. Live adapters should be introduced behind stable domain interfaces rather than wiring UI components directly to Kubernetes or OCI APIs.
+The implementation keeps typed mock mode for local UI development and also has live adapters behind stable domain interfaces. React components do not connect directly to Kubernetes or OCI APIs.
 
 
 ## Provider inventory policy
