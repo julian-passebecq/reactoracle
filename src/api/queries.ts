@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { controlPlane } from "./controlPlane";
 
 export function useOverview() {
@@ -19,4 +19,22 @@ export function useMaintenance() {
 
 export function useAgentStatus() {
   return useQuery({ queryKey: ["agent-status"], queryFn: () => controlPlane.getAgentStatus(), refetchInterval: 15_000 });
+}
+
+export function useHealthCheckMutation() {
+  return useMutation({
+    mutationFn: (machineId: string) => controlPlane.runHealthCheck(machineId),
+  });
+}
+
+export function useCommandStatus(commandId: string | null) {
+  return useQuery({
+    queryKey: ["command", commandId],
+    queryFn: () => controlPlane.getCommand(commandId!),
+    enabled: commandId !== null,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "success" || status === "failed" ? false : 1500;
+    },
+  });
 }
