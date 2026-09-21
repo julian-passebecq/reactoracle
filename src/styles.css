@@ -98,3 +98,6 @@ tbody tr:last-child td { border-bottom: 0; }
   border-radius: 8px;
   background: #fff8e6;
 }
+
+.healthCheckControl { display: inline-flex; align-items: center; gap: 8px; }
+.commandFailed { color: #a4262c; }
