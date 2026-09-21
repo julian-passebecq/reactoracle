@@ -50,6 +50,7 @@ jobs:
           GOOS=linux GOARCH=arm64 go build -o "$bundle/reactoracle-agent" ./cmd/reactoracle-agent
           cp reactoracle-agent.service agent.env.example install.sh configure-kube-access.sh "$bundle/"
           cp ../kubernetes/system/reactoracle-agent-rbac.yaml "$bundle/"
+          cp ../kubernetes/system/reactoracle-agent-restart-rbac.yaml "$bundle/"
           (cd "$bundle" && sha256sum reactoracle-agent > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
