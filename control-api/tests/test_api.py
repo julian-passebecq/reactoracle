@@ -676,3 +676,206 @@ def test_data_factory_plan_rejects_v1_execution() -> None:
             mlStages=[],
             executionEnabled=True,
         )
+
+
+def test_agent_snapshot_rejects_identity_mismatch(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    now = datetime.now(timezone.utc).isoformat()
+    response = client.post(
+        "/api/v1/agent/snapshot",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "machineId": "oracle-a",
+            "collectedAt": now,
+            "host": {
+                "id": "oracle-b",
+                "name": "oracle-b",
+                "shape": "VM.Standard.A1.Flex",
+                "ocpu": 2,
+                "memoryGb": 12,
+                "cpuPercent": 10,
+                "memoryUsedGb": 2,
+                "diskPercent": 10,
+                "uptime": "1h",
+                "k3sVersion": "v1.34",
+                "diskUsedGb": 10,
+                "diskTotalGb": 100,
+            },
+            "workloads": [],
+            "namespaces": [],
+            "maintenance": {
+                "os": "Ubuntu",
+                "kernel": "6.x",
+                "updatesAvailable": 0,
+                "securityUpdates": 0,
+                "rebootRequired": False,
+                "unusedImagesGb": 0,
+                "prometheusGb": 0,
+                "lokiGb": 0,
+                "lastBackup": "unknown",
+                "backupStatus": "unknown",
+            },
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_agent_snapshot_rejects_impossible_resource_values(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    now = datetime.now(timezone.utc).isoformat()
+    response = client.post(
+        "/api/v1/agent/snapshot",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "machineId": "oracle-bad-metrics",
+            "collectedAt": now,
+            "host": {
+                "id": "oracle-bad-metrics",
+                "name": "oracle-bad-metrics",
+                "shape": "VM.Standard.A1.Flex",
+                "ocpu": 2,
+                "memoryGb": 12,
+                "cpuPercent": 101,
+                "memoryUsedGb": 13,
+                "diskPercent": 120,
+                "uptime": "1h",
+                "k3sVersion": "v1.34",
+                "diskUsedGb": 101,
+                "diskTotalGb": 100,
+            },
+            "workloads": [],
+            "namespaces": [],
+            "maintenance": {
+                "os": "Ubuntu",
+                "kernel": "6.x",
+                "updatesAvailable": 0,
+                "securityUpdates": 0,
+                "rebootRequired": False,
+                "unusedImagesGb": 0,
+                "prometheusGb": 0,
+                "lokiGb": 0,
+                "lastBackup": "unknown",
+                "backupStatus": "unknown",
+            },
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_agent_snapshot_rejects_invalid_namespace_readiness(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    now = datetime.now(timezone.utc).isoformat()
+    response = client.post(
+        "/api/v1/agent/snapshot",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "machineId": "oracle-readiness",
+            "collectedAt": now,
+            "host": {
+                "id": "oracle-readiness",
+                "name": "oracle-readiness",
+                "shape": "VM.Standard.A1.Flex",
+                "ocpu": 2,
+                "memoryGb": 12,
+                "cpuPercent": 10,
+                "memoryUsedGb": 2,
+                "diskPercent": 10,
+                "uptime": "1h",
+                "k3sVersion": "v1.34",
+                "diskUsedGb": 10,
+                "diskTotalGb": 100,
+            },
+            "workloads": [],
+            "namespaces": [
+                {
+                    "name": "airflow",
+                    "podsReady": 3,
+                    "podsTotal": 2,
+                    "cpuMillicores": 0,
+                    "memoryMb": 0,
+                }
+            ],
+            "maintenance": {
+                "os": "Ubuntu",
+                "kernel": "6.x",
+                "updatesAvailable": 0,
+                "securityUpdates": 0,
+                "rebootRequired": False,
+                "unusedImagesGb": 0,
+                "prometheusGb": 0,
+                "lokiGb": 0,
+                "lastBackup": "unknown",
+                "backupStatus": "unknown",
+            },
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_future_heartbeat_is_not_considered_connected(monkeypatch) -> None:
+    from datetime import timedelta
+
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    future = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+    response = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": "oracle-future",
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": future,
+        },
+    )
+    assert response.status_code == 204
+
+    status_response = client.get("/api/v1/agent/status")
+    assert status_response.status_code == 200
+    assert status_response.json()["connected"] is False
+
+
+def test_command_result_requires_running_state(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    created = client.post(
+        "/api/v1/commands",
+        json={"command": "vm.health_check", "machineId": "oracle-command-state"},
+    )
+    assert created.status_code == 202
+    command_id = created.json()["id"]
+
+    premature = client.post(
+        f"/api/v1/agent/commands/{command_id}/result",
+        headers={"Authorization": "Bearer test-token"},
+        json={"status": "success", "result": {"ok": True}},
+    )
+    assert premature.status_code == 409
+
+    leased = client.get(
+        "/api/v1/agent/commands/next",
+        params={"machineId": "oracle-command-state"},
+        headers={"Authorization": "Bearer test-token"},
+    )
+    assert leased.status_code == 200
+
+    completed = client.post(
+        f"/api/v1/agent/commands/{command_id}/result",
+        headers={"Authorization": "Bearer test-token"},
+        json={"status": "success", "result": {"ok": True}},
+    )
+    assert completed.status_code == 200
+
+    repeated = client.post(
+        f"/api/v1/agent/commands/{command_id}/result",
+        headers={"Authorization": "Bearer test-token"},
+        json={"status": "success", "result": {"ok": True}},
+    )
+    assert repeated.status_code == 409
+
+
+def test_recent_command_limit_is_bounded() -> None:
+    too_small = client.get("/api/v1/commands", params={"limit": 0})
+    assert too_small.status_code == 422
+
+    too_large = client.get("/api/v1/commands", params={"limit": 101})
+    assert too_large.status_code == 422
