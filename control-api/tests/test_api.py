@@ -85,6 +85,7 @@ def test_agent_heartbeat_with_token(monkeypatch) -> None:
     status_response = client.get("/api/v1/agent/status")
     assert status_response.status_code == 200
     assert status_response.json()["connected"] is True
+    assert status_response.json()["snapshotFresh"] is False
 
 
 def test_agent_snapshot_updates_read_model(monkeypatch) -> None:
@@ -161,6 +162,10 @@ def test_agent_snapshot_updates_read_model(monkeypatch) -> None:
     assert overview["infrastructure"]["state"] == "unknown"
     assert overview["infrastructure"]["managedResources"] == 0
     assert overview["workloads"][0]["name"] == "grafana"
+
+    agent_status = client.get("/api/v1/agent/status").json()
+    assert agent_status["connected"] is False
+    assert agent_status["snapshotFresh"] is True
 
 
 def test_safe_health_check_command_round_trip(monkeypatch) -> None:
