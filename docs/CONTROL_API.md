@@ -233,3 +233,16 @@ No live Oracle agent snapshot has been received yet.
 ```
 
 This prevents mock CPU/RAM/Kubernetes/OpenTofu values from being mistaken for live infrastructure state. Static architecture-contract endpoints remain available before the agent connects.
+
+
+## Queued command safety
+
+ReactOracle does not intentionally queue operational commands for an offline Oracle agent.
+
+Before accepting an allow-listed command, the Control API verifies that:
+
+- the requested machine matches the established Oracle agent identity;
+- the Oracle agent heartbeat is currently fresh;
+- Kubernetes workload commands target a workload present in a fresh agent snapshot.
+
+As a second defense, a command that remains queued for more than 120 seconds expires before it can be leased by the agent. This prevents an old restart or health-check request from executing unexpectedly after a delayed reconnect.
