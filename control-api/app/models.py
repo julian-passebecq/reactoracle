@@ -150,3 +150,29 @@ class AgentStatus(BaseModel):
     connected: bool
     lastHeartbeat: AgentHeartbeat | None = None
     lastSnapshotAt: datetime | None = None
+
+
+class CommandRequest(BaseModel):
+    command: Literal["vm.health_check"]
+
+
+class CommandRun(BaseModel):
+    id: str
+    command: Literal["vm.health_check"]
+    status: Literal["queued", "running", "success", "failed"]
+    risk: Literal["safe"] = "safe"
+    createdAt: datetime
+    completedAt: datetime | None = None
+    result: dict[str, object] | None = None
+    error: str | None = None
+
+
+class AgentCommand(BaseModel):
+    id: str
+    command: Literal["vm.health_check"]
+
+
+class AgentCommandResult(BaseModel):
+    status: Literal["success", "failed"]
+    result: dict[str, object] | None = None
+    error: str | None = None
