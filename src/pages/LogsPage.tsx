@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Card, Dropdown, Option, Spinner, Text, Title3 } from "@fluentui/react-components";
-import { useAgentStatus, useCommandStatus, useLogQueryMutation, useOverview, useWorkloads } from "../api/queries";
+import { useAgentStatus, useCommandStatus, useLogQueryMutation, useOverview } from "../api/queries";
 import { DataError } from "../components/DataError";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
@@ -16,7 +16,6 @@ function asLogQueryResult(value: Record<string, unknown> | null | undefined): Lo
 
 export function LogsPage() {
   const overview = useOverview();
-  const workloads = useWorkloads();
   const agent = useAgentStatus();
   const logMutation = useLogQueryMutation();
   const [selectedWorkloadId, setSelectedWorkloadId] = useState("");
@@ -25,17 +24,15 @@ export function LogsPage() {
   const commandId = logMutation.data?.id ?? null;
   const command = useCommandStatus(commandId);
 
-  if (overview.isLoading || workloads.isLoading) {
+  if (overview.isLoading) {
     return <div className="loadingState"><Spinner label="Loading log targets" /></div>;
   }
   if (overview.isError || !overview.data) {
-    return <DataError error={overview.error} onRetry={() => overview.refetch()} />;
-  }
-  if (workloads.isError || !workloads.data) {
-    return <DataError error={workloads.error} onRetry={() => workloads.refetch()} />;
+    return <DataError error={overview.error} onRetry={() => void overview.refetch()} />;
   }
 
-  const selected = workloads.data.find((item) => item.id === selectedWorkloadId) ?? workloads.data[0];
+  const workloads = overview.data.workloads;
+  const selected = workloads.find((item) => item.id === selectedWorkloadId) ?? workloads[0];
   const logResult = asLogQueryResult(command.data?.result);
   const liveAgentUnavailable = runtimeConfig.mode === "live" && !agent.data?.connected;
   const running = logMutation.isPending || command.data?.status === "queued" || command.data?.status === "running";
