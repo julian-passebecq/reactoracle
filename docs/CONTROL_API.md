@@ -211,3 +211,25 @@ V1 invariants enforced by the API models:
 - architecture flows may reference only declared nodes;
 - platform/provider identifiers must remain unique;
 - provider usage bars require verified limits before they can be shown.
+
+
+## Live read-model readiness
+
+Operational read endpoints never fall back to demo telemetry in live mode.
+
+Until the authenticated Oracle agent posts its first valid snapshot, these endpoints return HTTP 503:
+
+```text
+GET /api/v1/overview
+GET /api/v1/k8s/workloads
+GET /api/v1/infrastructure
+GET /api/v1/maintenance
+```
+
+The response detail is:
+
+```text
+No live Oracle agent snapshot has been received yet.
+```
+
+This prevents mock CPU/RAM/Kubernetes/OpenTofu values from being mistaken for live infrastructure state. Static architecture-contract endpoints remain available before the agent connects.
