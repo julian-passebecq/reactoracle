@@ -8,6 +8,32 @@ import { runtimeConfig } from "../config";
 
 const delay = (ms = 160) => new Promise((resolve) => setTimeout(resolve, ms));
 
+class ControlPlaneHttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly statusText: string,
+    detail?: string,
+  ) {
+    super(detail ? "Control API " + status + ": " + detail : "Control API request failed: " + status + " " + statusText);
+    this.name = "ControlPlaneHttpError";
+  }
+}
+
+async function responseError(response: Response): Promise<ControlPlaneHttpError> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    try {
+      const body = await response.json() as { detail?: unknown };
+      if (typeof body.detail === "string" && body.detail.trim()) {
+        return new ControlPlaneHttpError(response.status, response.statusText, body.detail);
+      }
+    } catch {
+      // Fall back to status text if the error payload is malformed.
+    }
+  }
+  return new ControlPlaneHttpError(response.status, response.statusText);
+}
+
 export interface ControlPlaneClient {
   getOverview(): Promise<Overview>;
   getWorkloads(): Promise<Workload[]>;
@@ -176,7 +202,7 @@ class HttpControlPlaneClient implements ControlPlaneClient {
         ...init.headers,
       },
     });
-    if (!response.ok) throw new Error("Control API request failed: " + response.status + " " + response.statusText);
+    if (!response.ok) throw await responseError(response);
     return response.json() as Promise<T>;
   }
 
