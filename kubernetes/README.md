@@ -9,6 +9,7 @@ This directory contains cluster-level resources required by ReactOracle itself.
 - nodes
 - namespaces
 - pods
+- pod logs (`pods/log`, get only)
 - deployments
 - stateful sets
 - daemon sets
@@ -25,3 +26,6 @@ sudo ./agent/configure-kube-access.sh
 The script writes `/etc/reactoracle/agent.kubeconfig`, which the systemd agent service uses instead of the K3s administrator kubeconfig.
 
 The final `auth can-i delete pods` check should print `no`.
+
+
+Log access remains read-only. The agent can retrieve bounded pod logs for a selected workload, but it cannot exec into pods or mutate workloads.
