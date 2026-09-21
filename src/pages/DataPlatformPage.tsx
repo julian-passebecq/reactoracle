@@ -1,5 +1,6 @@
 import { Button, Card, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useGoldCatalog, useOverview } from "../api/queries";
+import { DataError } from "../components/DataError";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
@@ -10,9 +11,13 @@ const sumMemory = (items: { memoryMb: number }[]) => Math.round(items.reduce((su
 const sumCpu = (items: { cpuMillicores: number }[]) => Math.round(items.reduce((sum, item) => sum + item.cpuMillicores, 0));
 
 export function DataPlatformPage() {
-  const { data } = useOverview();
+  const overview = useOverview();
   const goldCatalog = useGoldCatalog();
-  if (!data) return <div className="loadingState"><Spinner label="Loading data platform" /></div>;
+  if (overview.isLoading) return <div className="loadingState"><Spinner label="Loading data platform" /></div>;
+  if (overview.isError || !overview.data) {
+    return <DataError title="Data platform unavailable" error={overview.error} onRetry={() => void overview.refetch()} />;
+  }
+  const data = overview.data;
 
   const airflowService = data.services.find((service) => service.id === "airflow");
   const sparkService = data.services.find((service) => service.id === "spark");
