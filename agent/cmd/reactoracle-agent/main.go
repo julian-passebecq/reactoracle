@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -32,6 +33,19 @@ type Heartbeat struct {
 	K3sReachable bool      `json:"k3sReachable"`
 	SentAt       time.Time `json:"sentAt"`
 }
+
+type AgentCommand struct {
+	ID        string `json:"id"`
+	MachineID string `json:"machineId"`
+	Command   string `json:"command"`
+}
+
+type CommandResult struct {
+	Status string         `json:"status"`
+	Result map[string]any `json:"result,omitempty"`
+	Error  string         `json:"error,omitempty"`
+}
+
 
 type Snapshot struct {
 	MachineID   string             `json:"machineId"`
@@ -214,7 +228,81 @@ func runOnce(client *http.Client, cfg Config) {
 	}
 	if err := postJSON(ctx, client, cfg, "/api/v1/agent/snapshot", snapshot); err != nil {
 		fmt.Fprintln(os.Stderr, "snapshot:", err)
+		return
 	}
+
+	if err := processNextCommand(ctx, client, cfg, host, workloads, namespaces, k3sReachable); err != nil {
+		fmt.Fprintln(os.Stderr, "command:", err)
+	}
+}
+
+func processNextCommand(
+	ctx context.Context,
+	client *http.Client,
+	cfg Config,
+	host HostSnapshot,
+	workloads []Workload,
+	namespaces []NamespaceSummary,
+	k3sReachable bool,
+) error {
+	command, err := getNextCommand(ctx, client, cfg, host.ID)
+	if err != nil || command == nil {
+		return err
+	}
+
+	result := CommandResult{Status: "failed"}
+	switch command.Command {
+	case "vm.health_check":
+		result.Status = "success"
+		result.Result = map[string]any{
+			"machineId":      host.ID,
+			"cpuPercent":     host.CPUPercent,
+			"memoryUsedGb":   host.MemoryUsedGB,
+			"memoryGb":       host.MemoryGB,
+			"diskPercent":    host.DiskPercent,
+			"k3sReachable":   k3sReachable,
+			"workloadCount":  len(workloads),
+			"namespaceCount": len(namespaces),
+			"checkedAt":      time.Now().UTC().Format(time.RFC3339),
+		}
+	default:
+		result.Error = "unsupported command"
+	}
+
+	return postJSON(ctx, client, cfg, "/api/v1/agent/commands/"+url.PathEscape(command.ID)+"/result", result)
+}
+
+func getNextCommand(ctx context.Context, client *http.Client, cfg Config, machineID string) (*AgentCommand, error) {
+	endpoint := cfg.BaseURL + "/api/v1/agent/commands/next?machineId=" + url.QueryEscape(machineID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+	if resp.StatusCode >= 300 {
+		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("command poll returned %s: %s", resp.Status, strings.TrimSpace(string(data)))
+	}
+
+	var command AgentCommand
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&command); err != nil {
+		return nil, err
+	}
+	if command.MachineID != machineID {
+		return nil, fmt.Errorf("received command for unexpected machine %q", command.MachineID)
+	}
+	return &command, nil
 }
 
 func postJSON(ctx context.Context, client *http.Client, cfg Config, path string, value any) error {
