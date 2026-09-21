@@ -148,5 +148,6 @@ See:
 - `docs/ROADMAP.md`
 - `docs/DEPLOYMENT.md`
 - `docs/MONITORING.md`
+- `docs/DATA_FACTORY_ROADMAP.md`
 - `agent/README.md`
 - `kubernetes/README.md`
