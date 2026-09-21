@@ -1,4 +1,4 @@
-import { Button, Card, Spinner, Text, Title3 } from "@fluentui/react-components";
+import { Card, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useCapabilities, useOverview } from "../api/queries";
 import { DataError } from "../components/DataError";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
