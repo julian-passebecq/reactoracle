@@ -1,17 +1,17 @@
 import { Button, Card, Spinner, Text, Title3 } from "@fluentui/react-components";
-import { useOverview } from "../api/queries";
+import { useGoldCatalog, useOverview } from "../api/queries";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { runtimeConfig } from "../config";
-import { goldTableCatalog } from "../data/goldCatalog";
 
 const sumMemory = (items: { memoryMb: number }[]) => Math.round(items.reduce((sum, item) => sum + item.memoryMb, 0));
 const sumCpu = (items: { cpuMillicores: number }[]) => Math.round(items.reduce((sum, item) => sum + item.cpuMillicores, 0));
 
 export function DataPlatformPage() {
   const { data } = useOverview();
+  const goldCatalog = useGoldCatalog();
   if (!data) return <div className="loadingState"><Spinner label="Loading data platform" /></div>;
 
   const airflowService = data.services.find((service) => service.id === "airflow");
@@ -95,15 +95,21 @@ export function DataPlatformPage() {
             <tr><th>Table</th><th>Grain</th><th>Purpose</th><th>Consumers</th><th>Storage</th></tr>
           </thead>
           <tbody>
-            {goldTableCatalog.map((table) => (
+            {goldCatalog.isLoading ? (
+              <tr><td colSpan={5}>Loading Gold catalog…</td></tr>
+            ) : null}
+            {(goldCatalog.data ?? []).map((table) => (
               <tr key={table.name}>
                 <td className="strongCell mono">{table.name}</td>
                 <td>{table.grain}</td>
                 <td>{table.purpose}</td>
                 <td>{table.consumers.join(", ")}</td>
-                <td>MotherDuck / DuckLake · {table.status}</td>
+                <td>{table.storage} · {table.status}{table.mlDerived ? " · ML-derived" : ""}</td>
               </tr>
             ))}
+            {!goldCatalog.isLoading && (goldCatalog.data?.length ?? 0) === 0 ? (
+              <tr><td colSpan={5}>No Gold contracts configured.</td></tr>
+            ) : null}
           </tbody>
         </table>
       </div>
