@@ -22,6 +22,6 @@ export function KubernetesPage() {
       <MetricCard label="Restarts" value={String(workloads.data.reduce((sum, item) => sum + item.restarts, 0))} detail="Current workloads" />
     </section>
     <section><div className="sectionHeader"><div><Title3>Namespaces</Title3><Text className="muted">Resource usage by logical workload boundary.</Text></div></div><div className="namespaceGrid">{namespaces.map((item) => <Card key={item.name}><Text weight="semibold">{item.name}</Text><div className="namespaceMetric">{item.podsReady}/{item.podsTotal} pods</div><div className="muted small">{item.cpuMillicores}m CPU · {item.memoryMb} MB RAM</div></Card>)}</div></section>
-    <section className="sectionGap"><div className="sectionHeader"><div><Title3>Workloads</Title3><Text className="muted">The first operational slice is read-only. Restart/scale comes in the safe-operations phase.</Text></div></div><WorkloadTable workloads={workloads.data} /></section>
+    <section className="sectionGap"><div className="sectionHeader"><div><Title3>Workloads</Title3><Text className="muted">Restart is now available for Deployments, StatefulSets and DaemonSets through an explicit moderate-risk confirmation. Jobs remain non-restartable.</Text></div></div><WorkloadTable workloads={workloads.data} machineId={overview.data.vm.id} allowRestart /></section>
   </>;
 }
