@@ -1,5 +1,6 @@
 import { Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useOverview, useRecentCommands } from "../api/queries";
+import { DataError } from "../components/DataError";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 
@@ -12,8 +13,11 @@ export function ActivityPage() {
   const overview = useOverview();
   const commands = useRecentCommands();
 
-  if (!overview.data) {
+  if (overview.isLoading) {
     return <div className="loadingState"><Spinner label="Loading activity" /></div>;
+  }
+  if (overview.isError || !overview.data) {
+    return <DataError title="Activity feed unavailable" error={overview.error} onRetry={() => void overview.refetch()} />;
   }
 
   return (
@@ -31,7 +35,13 @@ export function ActivityPage() {
           </div>
         </div>
 
-        {commands.data && commands.data.length > 0 ? (
+        {commands.isError ? (
+          <DataError
+            title="Control operations unavailable"
+            error={commands.error}
+            onRetry={() => void commands.refetch()}
+          />
+        ) : commands.data && commands.data.length > 0 ? (
           <div className="tableWrap">
             <table>
               <thead>
@@ -57,6 +67,10 @@ export function ActivityPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : commands.isLoading ? (
+          <div className="emptyPanel">
+            <Spinner size="tiny" label="Loading control operations" />
           </div>
         ) : (
           <div className="emptyPanel">
