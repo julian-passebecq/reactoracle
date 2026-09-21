@@ -924,3 +924,20 @@ def test_data_factory_output_rejects_duplicate_durable_zones() -> None:
             destination="MotherDuck / DuckLake",
             durableZones=["Raw", "Gold", "Gold"],
         )
+
+
+def test_openapi_exposes_only_allowlisted_command_surface() -> None:
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+    paths = response.json()["paths"]
+
+    assert "/api/v1/execute" not in paths
+    assert "/api/v1/shell" not in paths
+    assert "/api/v1/terminal" not in paths
+
+    assert "post" in paths["/api/v1/commands"]
+    assert "get" in paths["/api/v1/commands"]
+    assert "/api/v1/platform/architecture" in paths
+    assert "/api/v1/platform/data-factory" in paths
+    assert "/api/v1/platform/gold-catalog" in paths
+    assert "/api/v1/platform/providers" in paths
