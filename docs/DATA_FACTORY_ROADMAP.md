@@ -9,15 +9,16 @@ The first synthetic source will be a small ReactOracle-specific derivative of Co
 It remains an external/headless generator with a narrow contract. ReactOracle owns the UI and orchestration.
 
 ```text
+CORE DATA ENGINEERING
+
 ReactOracle
    |
    v
-Contoso Forge Lite
+Contoso Forge Lite (optional source)
    |
    | Parquet + truth/provenance
    v
-MotherDuck / DuckLake
-   |  Raw / Bronze / Silver / Gold / Features
+MotherDuck / DuckLake Raw
    |
    v
 Airflow
@@ -25,17 +26,23 @@ Airflow
    v
 Spark on Oracle K3s
    |
-   | validated outputs published back to the durable lakehouse
+   | validated outputs
    v
-MotherDuck / DuckLake Gold + Features
+MotherDuck / DuckLake
+Bronze / Silver / Gold / Features
    |
-   +--> BI / SQL consumers
+   +--> Power BI / SQL / notebooks / APIs
+
+
+OPTIONAL ML ENRICHMENT
+
+MotherDuck / DuckLake Features
    |
    v
 Kaggle + MLJAR
    |
-   +--> full prediction history -> lakehouse
-   +--> small serving state / metrics -> optional Neon
+   +--> historical predictions -> DuckLake
+   +--> compact latest state / metrics -> optional Neon
    +--> model artifacts -> artifact storage
 ```
 
