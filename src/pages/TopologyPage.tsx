@@ -129,8 +129,8 @@ export function TopologyPage() {
           <div className="topologyExternal">
             <Card><Title3>Kafka</Title3><Text className="muted">Managed externally</Text></Card>
             <Card><Title3>FastAPI Cloud</Title3><Text className="muted">Application APIs</Text></Card>
-            <Card><Title3>MotherDuck</Title3><Text className="muted">Optional analytics</Text></Card>
-            <Card><Title3>Neon</Title3><Text className="muted">Optional managed Postgres</Text></Card>
+            <Card><Title3>MotherDuck / DuckLake</Title3><Text className="muted">Planned durable Raw → Gold lakehouse</Text></Card>
+            <Card><Title3>Neon</Title3><Text className="muted">Optional serving / ML metadata Postgres</Text></Card>
           </div>
         </section>
       </div>
