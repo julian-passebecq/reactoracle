@@ -27,7 +27,7 @@ from .models import (
     Workload,
 )
 from .platform_catalog import build_data_factory_plan, build_gold_catalog, build_platform_architecture, build_provider_inventory
-from .state import store
+from .state import CommandStateConflict, store
 
 
 app = FastAPI(
@@ -233,16 +233,13 @@ def next_agent_command(machineId: str) -> AgentCommand | Response:
 
 @app.post("/api/v1/agent/commands/{command_id}/result", response_model=CommandRun, dependencies=[Depends(require_agent_token)])
 def agent_command_result(command_id: str, result: AgentCommandResult) -> CommandRun:
-    current = store.get_command(command_id)
-    if current is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found.")
-    if current.status != "running":
+    try:
+        run = store.complete_command(command_id, result)
+    except CommandStateConflict as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Command result can only complete a running command; current state is {current.status}.",
-        )
-
-    run = store.complete_command(command_id, result)
+            detail=f"Command result can only complete a running command; current state is {exc.current_status}.",
+        ) from exc
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found.")
     return run
