@@ -61,3 +61,33 @@ def test_expired_command_does_not_block_next_fresh_command() -> None:
     expired_run = store.get_command(expired.id)
     assert expired_run is not None
     assert expired_run.status == "failed"
+
+
+def test_stale_command_status_read_expires_it() -> None:
+    store = ControlPlaneStore()
+    now = datetime.now(timezone.utc)
+    run = store.create_command(
+        "oracle-a1-01",
+        "vm.health_check",
+        created_at=now - timedelta(seconds=COMMAND_QUEUE_TTL_SECONDS + 5),
+    )
+
+    expired = store.get_command(run.id)
+    assert expired is not None
+    assert expired.status == "failed"
+    assert expired.error == "Command expired before the agent leased it."
+
+
+def test_recent_commands_reports_expired_queue_entries_as_failed() -> None:
+    store = ControlPlaneStore()
+    now = datetime.now(timezone.utc)
+    run = store.create_command(
+        "oracle-a1-01",
+        "vm.health_check",
+        created_at=now - timedelta(seconds=COMMAND_QUEUE_TTL_SECONDS + 5),
+    )
+
+    recent = store.recent_commands()
+    assert len(recent) == 1
+    assert recent[0].id == run.id
+    assert recent[0].status == "failed"
