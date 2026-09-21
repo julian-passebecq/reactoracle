@@ -23,7 +23,7 @@ const nav = [
 
 export function AppShell() {
   const agent = useAgentStatus();
-  const controlHealth = runtimeConfig.mode === "mock" ? "idle" : agent.data?.connected ? "healthy" : "offline";
+  const controlHealth = runtimeConfig.mode === "mock" ? "idle" : !agent.data?.connected ? "offline" : agent.data.snapshotFresh ? "healthy" : "warning";
   return <div className="app">
     <aside className="sidebar">
       <div className="brand"><div className="brandMark">RO</div><div><Text weight="semibold">ReactOracle</Text><div className="muted small">Oracle data lab</div></div></div>
