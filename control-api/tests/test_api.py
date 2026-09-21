@@ -941,3 +941,19 @@ def test_openapi_exposes_only_allowlisted_command_surface() -> None:
     assert "/api/v1/platform/data-factory" in paths
     assert "/api/v1/platform/gold-catalog" in paths
     assert "/api/v1/platform/providers" in paths
+
+
+def test_agent_heartbeat_rejects_naive_timestamp(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    response = client.post(
+        "/api/v1/agent/heartbeat",
+        headers={"Authorization": "Bearer test-token"},
+        json={
+            "agentVersion": "0.1.0",
+            "machineId": "oracle-naive-time",
+            "status": "healthy",
+            "k3sReachable": True,
+            "sentAt": "2026-09-21T12:00:00",
+        },
+    )
+    assert response.status_code == 422
