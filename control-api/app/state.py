@@ -15,6 +15,13 @@ class CommandStateConflict(RuntimeError):
         self.current_status = current_status
 
 
+class MachineIdentityConflict(RuntimeError):
+    def __init__(self, expected: str, received: str) -> None:
+        super().__init__(received)
+        self.expected = expected
+        self.received = received
+
+
 class ControlPlaneStore:
     def __init__(self) -> None:
         self._lock = RLock()
@@ -34,10 +41,19 @@ class ControlPlaneStore:
 
     def record_heartbeat(self, heartbeat: AgentHeartbeat) -> None:
         with self._lock:
+            if self._heartbeat is not None and self._heartbeat.machineId != heartbeat.machineId:
+                raise MachineIdentityConflict(self._heartbeat.machineId, heartbeat.machineId)
+            if self._overview is not None and self._overview.vm.id != heartbeat.machineId:
+                raise MachineIdentityConflict(self._overview.vm.id, heartbeat.machineId)
             self._heartbeat = heartbeat
 
     def record_snapshot(self, snapshot: AgentSnapshot) -> None:
         with self._lock:
+            if self._heartbeat is not None and self._heartbeat.machineId != snapshot.machineId:
+                raise MachineIdentityConflict(self._heartbeat.machineId, snapshot.machineId)
+            if self._overview is not None and self._overview.vm.id != snapshot.machineId:
+                raise MachineIdentityConflict(self._overview.vm.id, snapshot.machineId)
+
             overview = deepcopy(self._overview) if self._overview is not None else build_live_overview_template()
             host = snapshot.host
             overview.vm.id = host.id
