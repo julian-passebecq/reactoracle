@@ -17,6 +17,7 @@ from .models import (
     CommandRequest,
     CommandRun,
     Capabilities,
+    DataFactoryPlan,
     GoldTableContract,
     InfrastructureSummary,
     MaintenanceSummary,
@@ -25,7 +26,7 @@ from .models import (
     ProviderInventory,
     Workload,
 )
-from .platform_catalog import build_gold_catalog, build_platform_architecture, build_provider_inventory
+from .platform_catalog import build_data_factory_plan, build_gold_catalog, build_platform_architecture, build_provider_inventory
 from .state import store
 
 
@@ -103,6 +104,11 @@ def gold_catalog() -> list[GoldTableContract]:
 @app.get("/api/v1/platform/providers", response_model=ProviderInventory)
 def provider_inventory() -> ProviderInventory:
     return build_provider_inventory()
+
+
+@app.get("/api/v1/platform/data-factory", response_model=DataFactoryPlan)
+def data_factory_plan() -> DataFactoryPlan:
+    return build_data_factory_plan()
 
 
 def mutations_enabled() -> bool:
