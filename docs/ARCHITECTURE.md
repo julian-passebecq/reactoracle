@@ -34,6 +34,23 @@ Ephemeral Kubernetes Jobs: Spark applications, dbt, Polars and maintenance jobs.
 
 External: Kafka, FastAPI application backend, MotherDuck, Neon and frontend hosting.
 
+Future source layer: ReactOracle can optionally call a headless Contoso Forge derivative to generate deterministic synthetic source data. That generator is not required for normal Airflow/Spark use. Small/medium scenarios may first load an optional source-system Neon/PostgreSQL database; large scenarios should flow as Parquet/object/file outputs directly into Airflow/Spark.
+
+The intended complete lineage is:
+
+```text
+optional Contoso generator
+        -> optional source Neon
+        -> Airflow
+        -> Spark on K3s
+        -> Bronze/Silver/Gold/features
+        -> Kaggle/MLJAR
+        -> result/serving Neon
+        -> dbt / BI
+```
+
+V1 exposes this architecture and capability model; generator execution is a later vertical slice.
+
 ## Frontend modules
 
 - Overview
@@ -45,5 +62,7 @@ External: Kafka, FastAPI application backend, MotherDuck, Neon and frontend host
 - Maintenance
 - Activity
 - Settings
+
+A future Data Factory / source layer is documented in `docs/DATA_FACTORY_ROADMAP.md`.
 
 The first implementation is UI-first with typed mock data. Live adapters should be introduced behind stable domain interfaces rather than wiring UI components directly to Kubernetes or OCI APIs.
