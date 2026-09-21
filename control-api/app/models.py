@@ -189,6 +189,7 @@ class AgentSnapshot(BaseModel):
 
 class AgentStatus(BaseModel):
     connected: bool
+    snapshotFresh: bool = False
     lastHeartbeat: AgentHeartbeat | None = None
     lastSnapshotAt: datetime | None = None
 
