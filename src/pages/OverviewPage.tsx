@@ -1,14 +1,21 @@
 import { Button, Card, CardHeader, Divider, ProgressBar, Spinner, Text, Title3 } from "@fluentui/react-components";
-import { useOverview } from "../api/queries";
+import { useAgentStatus, useOverview } from "../api/queries";
+import { DataError } from "../components/DataError";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { WorkloadTable } from "../components/WorkloadTable";
+import { runtimeConfig } from "../config";
 
 export function OverviewPage() {
-  const { data, isLoading } = useOverview();
-  if (isLoading || !data) return <div className="loadingState"><Spinner label="Loading Oracle control plane" /></div>;
+  const overviewQuery = useOverview();
+  const agentQuery = useAgentStatus();
+  if (overviewQuery.isLoading) return <div className="loadingState"><Spinner label="Loading Oracle control plane" /></div>;
+  if (overviewQuery.isError || !overviewQuery.data) return <DataError error={overviewQuery.error} onRetry={() => overviewQuery.refetch()} />;
+  const data = overviewQuery.data;
   const vm = data.vm;
+  const agentLabel = runtimeConfig.mode === "mock" ? "Mock data" : agentQuery.data?.connected ? "Agent connected" : "Agent offline";
+  const agentDetail = runtimeConfig.mode === "mock" ? "Set VITE_CONTROL_API_BASE_URL for live mode" : agentQuery.data?.lastSnapshotAt ?? "No snapshot received";
   return <>
     <PageHeader title="Oracle data lab" subtitle={vm.shape + " · " + vm.ocpu + " OCPU · " + vm.memoryGb + " GB RAM · K3s " + vm.k3sVersion} actions={<><StatusBadge status="healthy" /><Text>{vm.name}</Text></>} />
     <section className="metrics">
@@ -16,6 +23,7 @@ export function OverviewPage() {
       <MetricCard label="Memory" value={vm.memoryUsedGb + " / " + vm.memoryGb + " GB"} detail="Available for jobs" />
       <MetricCard label="Storage" value={vm.diskPercent + "%"} detail="Boot volume" />
       <MetricCard label="Projected OCI bill" value={vm.projectedCost} detail="Free-tier guardrail" />
+      <MetricCard label="Oracle agent" value={agentLabel} detail={agentDetail} />
     </section>
     <section className="gridTwo">
       <Card><CardHeader header={<Title3>Platform health</Title3>} /><div className="serviceList">
