@@ -4,3 +4,11 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+
+# OpenTofu / Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
