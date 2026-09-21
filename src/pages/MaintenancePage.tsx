@@ -1,11 +1,16 @@
 import { Button, Card, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useMaintenance } from "../api/queries";
+import { DataError } from "../components/DataError";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function MaintenancePage() {
-  const { data } = useMaintenance();
-  if (!data) return <div className="loadingState"><Spinner label="Loading maintenance state" /></div>;
+  const maintenance = useMaintenance();
+  if (maintenance.isLoading) return <div className="loadingState"><Spinner label="Loading maintenance state" /></div>;
+  if (maintenance.isError || !maintenance.data) {
+    return <DataError title="Maintenance state unavailable" error={maintenance.error} onRetry={() => void maintenance.refetch()} />;
+  }
+  const data = maintenance.data;
   return <>
     <PageHeader title="Maintenance" subtitle="Host hygiene, storage, updates and backup status" />
     <section className="gridTwo">
