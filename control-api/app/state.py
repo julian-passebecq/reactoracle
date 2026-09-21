@@ -125,30 +125,38 @@ class ControlPlaneStore:
             self._command_order.append(run.id)
             return deepcopy(run)
 
+    def _expire_stale_commands(self, now: datetime) -> None:
+        for command_id in self._command_order:
+            run = self._commands[command_id]
+            if run.status != "queued":
+                continue
+            age_seconds = (now - run.createdAt).total_seconds()
+            if age_seconds <= COMMAND_QUEUE_TTL_SECONDS:
+                continue
+            run.status = "failed"
+            run.error = "Command expired before the agent leased it."
+            run.completedAt = now
+            self._commands[command_id] = run
+
     def get_command(self, command_id: str) -> CommandRun | None:
         with self._lock:
+            self._expire_stale_commands(datetime.now(timezone.utc))
             run = self._commands.get(command_id)
             return deepcopy(run) if run else None
 
     def recent_commands(self, limit: int = 20) -> list[CommandRun]:
         with self._lock:
+            self._expire_stale_commands(datetime.now(timezone.utc))
             ids = self._command_order[-max(1, min(limit, 100)):]
             return [deepcopy(self._commands[item]) for item in reversed(ids)]
 
     def lease_next_command(self, machine_id: str, now: datetime | None = None) -> AgentCommand | None:
         with self._lock:
             lease_time = now or datetime.now(timezone.utc)
+            self._expire_stale_commands(lease_time)
             for command_id in self._command_order:
                 run = self._commands[command_id]
                 if run.status != "queued" or run.machineId != machine_id:
-                    continue
-
-                age_seconds = (lease_time - run.createdAt).total_seconds()
-                if age_seconds > COMMAND_QUEUE_TTL_SECONDS:
-                    run.status = "failed"
-                    run.error = "Command expired before the agent leased it."
-                    run.completedAt = lease_time
-                    self._commands[command_id] = run
                     continue
 
                 run.status = "running"
