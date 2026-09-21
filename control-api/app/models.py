@@ -212,6 +212,8 @@ class DurableDataZone(BaseModel):
 
 class PlatformArchitecture(BaseModel):
     nodes: list[PlatformNode]
+    deliveryFlow: list[str]
+    controlFlow: list[str]
     engineeringFlow: list[str]
     mlEnrichmentFlow: list[str]
     durableZones: list[DurableDataZone]
