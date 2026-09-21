@@ -1,4 +1,4 @@
-import type { AgentStatus, CommandRun, InfrastructureSummary, LogQueryInput, MaintenanceSummary, Overview, Workload } from "../domain/types";
+import type { AgentStatus, CommandRun, InfrastructureSummary, LogQueryInput, MaintenanceSummary, Overview, RestartWorkloadInput, Workload } from "../domain/types";
 import { overviewMock } from "../data/mock";
 import { runtimeConfig } from "../config";
 
@@ -12,6 +12,7 @@ export interface ControlPlaneClient {
   getAgentStatus(): Promise<AgentStatus>;
   runHealthCheck(machineId: string): Promise<CommandRun>;
   runLogQuery(input: LogQueryInput): Promise<CommandRun>;
+  restartWorkload(input: RestartWorkloadInput): Promise<CommandRun>;
   getCommand(commandId: string): Promise<CommandRun>;
   getRecentCommands(): Promise<CommandRun[]>;
 }
@@ -101,6 +102,40 @@ class MockControlPlaneClient implements ControlPlaneClient {
     return { ...run };
   }
 
+  async restartWorkload(input: RestartWorkloadInput) {
+    await delay(120);
+    const id = "mock_restart_" + Date.now();
+    const run: CommandRun = {
+      id,
+      machineId: input.machineId,
+      command: "k8s.restart_workload",
+      arguments: { namespace: input.namespace, name: input.name, kind: input.kind },
+      status: "running",
+      risk: "moderate",
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+      result: null,
+      error: null,
+    };
+    this.commands.set(id, run);
+    window.setTimeout(() => {
+      const current = this.commands.get(id);
+      if (!current) return;
+      this.commands.set(id, {
+        ...current,
+        status: "success",
+        completedAt: new Date().toISOString(),
+        result: {
+          namespace: input.namespace,
+          workload: input.name,
+          kind: input.kind,
+          restartedAt: new Date().toISOString(),
+        },
+      });
+    }, 900);
+    return { ...run };
+  }
+
   async getCommand(commandId: string) {
     await delay(80);
     const run = this.commands.get(commandId);
@@ -157,6 +192,20 @@ class HttpControlPlaneClient implements ControlPlaneClient {
           name: input.name,
           kind: input.kind,
           tail: input.tail,
+        },
+      }),
+    });
+  }
+  restartWorkload(input: RestartWorkloadInput) {
+    return this.request<CommandRun>("/api/v1/commands", {
+      method: "POST",
+      body: JSON.stringify({
+        command: "k8s.restart_workload",
+        machineId: input.machineId,
+        arguments: {
+          namespace: input.namespace,
+          name: input.name,
+          kind: input.kind,
         },
       }),
     });
