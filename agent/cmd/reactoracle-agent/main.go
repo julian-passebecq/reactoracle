@@ -74,6 +74,13 @@ type NamespaceSummary struct {
 	MemoryMB      float64 `json:"memoryMb"`
 }
 
+type podMetric struct {
+	Namespace     string
+	Name          string
+	CPUMillicores float64
+	MemoryMB      float64
+}
+
 type MaintenanceSummary struct {
 	OS               string  `json:"os"`
 	Kernel           string  `json:"kernel"`
@@ -366,9 +373,16 @@ func readUptime() string {
 
 func collectKubernetes(ctx context.Context) ([]Workload, []NamespaceSummary, bool) {
 	workloads, err := readWorkloads(ctx)
-	if err != nil { return []Workload{}, []NamespaceSummary{}, false }
+	if err != nil {
+		return []Workload{}, []NamespaceSummary{}, false
+	}
 	namespaces, err := readNamespaces(ctx)
-	if err != nil { return workloads, []NamespaceSummary{}, false }
+	if err != nil {
+		return workloads, []NamespaceSummary{}, false
+	}
+	if metrics, err := readPodMetrics(ctx); err == nil {
+		applyPodMetrics(workloads, namespaces, metrics)
+	}
 	return workloads, namespaces, true
 }
 
@@ -435,6 +449,116 @@ func readNamespaces(ctx context.Context) ([]NamespaceSummary, error) {
 }
 
 func kubectlJSON(ctx context.Context, args ...string) ([]byte, error) {
+	return kubectlOutput(ctx, args...)
+}
+
+func readPodMetrics(ctx context.Context) ([]podMetric, error) {
+	data, err := kubectlOutput(ctx, "top", "pods", "-A", "--no-headers")
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	result := make([]podMetric, 0, len(lines))
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) < 4 {
+			continue
+		}
+		cpu, err := parseCPUToMillicores(fields[2])
+		if err != nil {
+			continue
+		}
+		memory, err := parseMemoryToMB(fields[3])
+		if err != nil {
+			continue
+		}
+		result = append(result, podMetric{
+			Namespace: fields[0],
+			Name: fields[1],
+			CPUMillicores: cpu,
+			MemoryMB: memory,
+		})
+	}
+	return result, nil
+}
+
+func applyPodMetrics(workloads []Workload, namespaces []NamespaceSummary, metrics []podMetric) {
+	for _, metric := range metrics {
+		for i := range namespaces {
+			if namespaces[i].Name == metric.Namespace {
+				namespaces[i].CPUMillicores += metric.CPUMillicores
+				namespaces[i].MemoryMB += metric.MemoryMB
+				break
+			}
+		}
+
+		best := -1
+		bestLen := -1
+		for i := range workloads {
+			if workloads[i].Namespace != metric.Namespace {
+				continue
+			}
+			if metric.Name == workloads[i].Name || strings.HasPrefix(metric.Name, workloads[i].Name+"-") {
+				if len(workloads[i].Name) > bestLen {
+					best = i
+					bestLen = len(workloads[i].Name)
+				}
+			}
+		}
+		if best >= 0 {
+			workloads[best].CPUMillicores += metric.CPUMillicores
+			workloads[best].MemoryMB += metric.MemoryMB
+		}
+	}
+	for i := range workloads {
+		workloads[i].CPUMillicores = round1(workloads[i].CPUMillicores)
+		workloads[i].MemoryMB = round1(workloads[i].MemoryMB)
+	}
+	for i := range namespaces {
+		namespaces[i].CPUMillicores = round1(namespaces[i].CPUMillicores)
+		namespaces[i].MemoryMB = round1(namespaces[i].MemoryMB)
+	}
+}
+
+func parseCPUToMillicores(raw string) (float64, error) {
+	switch {
+	case strings.HasSuffix(raw, "n"):
+		value, err := strconv.ParseFloat(strings.TrimSuffix(raw, "n"), 64)
+		return value / 1_000_000, err
+	case strings.HasSuffix(raw, "u"):
+		value, err := strconv.ParseFloat(strings.TrimSuffix(raw, "u"), 64)
+		return value / 1_000, err
+	case strings.HasSuffix(raw, "m"):
+		return strconv.ParseFloat(strings.TrimSuffix(raw, "m"), 64)
+	default:
+		value, err := strconv.ParseFloat(raw, 64)
+		return value * 1000, err
+	}
+}
+
+func parseMemoryToMB(raw string) (float64, error) {
+	units := []struct {
+		suffix string
+		factor float64
+	}{
+		{"Ki", 1.0 / 1024},
+		{"Mi", 1},
+		{"Gi", 1024},
+		{"Ti", 1024 * 1024},
+		{"K", 1.0 / 1000},
+		{"M", 1},
+		{"G", 1000},
+	}
+	for _, unit := range units {
+		if strings.HasSuffix(raw, unit.suffix) {
+			value, err := strconv.ParseFloat(strings.TrimSuffix(raw, unit.suffix), 64)
+			return value * unit.factor, err
+		}
+	}
+	return strconv.ParseFloat(raw, 64)
+}
+
+func kubectlOutput(ctx context.Context, args ...string) ([]byte, error) {
 	if output, err := exec.CommandContext(ctx, "kubectl", args...).Output(); err == nil {
 		return output, nil
 	}
