@@ -201,7 +201,7 @@ func runOnce(client *http.Client, cfg Config) {
 		return
 	}
 	workloads, namespaces, k3sReachable := collectKubernetes(ctx)
-	maintenance := collectMaintenance()
+	maintenance := collectMaintenance(ctx)
 
 	agentStatus := "healthy"
 	if !k3sReachable {
@@ -871,19 +871,104 @@ func kubectlOutput(ctx context.Context, args ...string) ([]byte, error) {
 	return exec.CommandContext(ctx, "k3s", k3sArgs...).Output()
 }
 
-func collectMaintenance() MaintenanceSummary {
+func collectMaintenance(ctx context.Context) MaintenanceSummary {
+	updatesAvailable, securityUpdates := readAptUpdates(ctx)
+	unusedImagesGB := readDockerReclaimableGB(ctx)
 	return MaintenanceSummary{
-		OS: readOSPrettyName(),
-		Kernel: commandFirstLine(context.Background(), "uname", "-r"),
-		UpdatesAvailable: 0,
-		SecurityUpdates: 0,
-		RebootRequired: fileExists("/var/run/reboot-required"),
-		UnusedImagesGB: 0,
-		PrometheusGB: 0,
-		LokiGB: 0,
-		LastBackup: "unknown",
-		BackupStatus: "unknown",
+		OS:               readOSPrettyName(),
+		Kernel:           commandFirstLine(ctx, "uname", "-r"),
+		UpdatesAvailable: updatesAvailable,
+		SecurityUpdates:  securityUpdates,
+		RebootRequired:   fileExists("/var/run/reboot-required"),
+		UnusedImagesGB:   round1(unusedImagesGB),
+		PrometheusGB:     0,
+		LokiGB:           0,
+		LastBackup:       "unknown",
+		BackupStatus:     "unknown",
 	}
+}
+
+func readAptUpdates(ctx context.Context) (total, security int) {
+	output, err := exec.CommandContext(ctx, "apt", "list", "--upgradable").Output()
+	if err != nil {
+		return 0, 0
+	}
+	return parseAptUpgradable(string(output))
+}
+
+func parseAptUpgradable(output string) (total, security int) {
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "Listing...") {
+			continue
+		}
+		total++
+		lower := strings.ToLower(line)
+		if strings.Contains(lower, "-security") || strings.Contains(lower, "/security") || strings.Contains(lower, ",security") {
+			security++
+		}
+	}
+	return total, security
+}
+
+func readDockerReclaimableGB(ctx context.Context) float64 {
+	output, err := exec.CommandContext(ctx, "docker", "system", "df", "--format", "{{json .}}").Output()
+	if err != nil {
+		return 0
+	}
+
+	var totalBytes float64
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		var row map[string]any
+		if err := json.Unmarshal([]byte(line), &row); err != nil {
+			continue
+		}
+		typeName, _ := row["Type"].(string)
+		if typeName != "Images" && typeName != "Build Cache" {
+			continue
+		}
+		reclaimable, _ := row["Reclaimable"].(string)
+		if idx := strings.Index(reclaimable, " ("); idx >= 0 {
+			reclaimable = reclaimable[:idx]
+		}
+		bytes, err := parseHumanBytes(strings.TrimSpace(reclaimable))
+		if err == nil {
+			totalBytes += bytes
+		}
+	}
+	return totalBytes / (1024 * 1024 * 1024)
+}
+
+func parseHumanBytes(raw string) (float64, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return 0, errors.New("empty size")
+	}
+	units := []struct {
+		suffix string
+		factor float64
+	}{
+		{"TB", 1e12},
+		{"GB", 1e9},
+		{"MB", 1e6},
+		{"KB", 1e3},
+		{"B", 1},
+	}
+	upper := strings.ToUpper(value)
+	for _, unit := range units {
+		if strings.HasSuffix(upper, unit.suffix) {
+			numeric := strings.TrimSpace(value[:len(value)-len(unit.suffix)])
+			parsed, err := strconv.ParseFloat(numeric, 64)
+			if err != nil {
+				return 0, err
+			}
+			return parsed * unit.factor, nil
+		}
+	}
+	return 0, fmt.Errorf("unsupported size %q", raw)
 }
 
 func readOSPrettyName() string {
