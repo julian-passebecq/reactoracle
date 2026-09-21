@@ -51,6 +51,7 @@ The frontend already provides routed pages for:
 - Topology
 - Infrastructure / OpenTofu
 - Kubernetes
+- Data Factory
 - Data Platform
 - Monitoring
 - Logs
