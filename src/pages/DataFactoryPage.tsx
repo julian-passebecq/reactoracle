@@ -2,10 +2,11 @@ import { Badge, Card, Text, Title2, Title3 } from "@fluentui/react-components";
 import { PageHeader } from "../components/PageHeader";
 import { contosoPlan, coreDataFactoryStages, mlDataFactoryStages, type DataFactoryStage, type DataFactoryStageState } from "../data/dataFactory";
 
-const stageColor: Record<DataFactoryStageState, "success" | "warning" | "informative"> = {
+const stageColor: Record<DataFactoryStageState, "success" | "warning" | "informative" | "subtle"> = {
   live: "success",
   planned: "warning",
   external: "informative",
+  optional: "subtle",
 };
 
 function StageLane({ stages }: { stages: DataFactoryStage[] }) {
