@@ -63,6 +63,7 @@ V1 exposes this architecture and capability model; generator execution is a late
 - Topology
 - Infrastructure / OpenTofu
 - Kubernetes
+- Data Factory
 - Data Platform
 - Monitoring
 - Logs
