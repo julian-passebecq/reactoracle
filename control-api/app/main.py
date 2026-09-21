@@ -37,6 +37,7 @@ app = FastAPI(
 )
 
 origins = [item.strip() for item in os.getenv("REACTORACLE_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if item.strip()]
+K8S_NAMESPACE = re.compile(r"^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$")
 K8S_NAME = re.compile(r"^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$")
 LOG_KINDS = {"Deployment", "StatefulSet", "DaemonSet", "Job"}
 RESTART_KINDS = {"Deployment", "StatefulSet", "DaemonSet"}
@@ -125,6 +126,52 @@ def mutations_enabled() -> bool:
     return os.getenv("REACTORACLE_ENABLE_MUTATIONS", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _require_known_machine(machine_id: str) -> None:
+    overview = store.get_overview()
+    if overview is not None:
+        known_machine = overview.vm.id
+    else:
+        status_snapshot = store.get_agent_status()
+        known_machine = status_snapshot.lastHeartbeat.machineId if status_snapshot.lastHeartbeat else None
+
+    if known_machine is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No Oracle agent identity has been established yet.",
+        )
+    if machine_id != known_machine:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Command targets {machine_id}, but the connected Oracle machine is {known_machine}.",
+        )
+
+
+def _require_known_workload(
+    machine_id: str,
+    namespace: str,
+    name: str,
+    kind: str,
+) -> None:
+    _require_known_machine(machine_id)
+    agent = store.get_agent_status()
+    if not agent.snapshotFresh:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Kubernetes workload commands require a fresh Oracle agent snapshot.",
+        )
+
+    overview = require_overview()
+    known = any(
+        item.namespace == namespace and item.name == name and item.kind == kind
+        for item in overview.workloads
+    )
+    if not known:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Kubernetes workload is not present in the latest Oracle agent snapshot.",
+        )
+
+
 @app.get("/api/v1/capabilities", response_model=Capabilities)
 def capabilities() -> Capabilities:
     return Capabilities(restartWorkload=mutations_enabled())
@@ -142,9 +189,9 @@ def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> 
     kind = arguments.get("kind")
     tail_value = arguments.get("tail", 100)
 
-    if not isinstance(namespace, str) or not K8S_NAME.fullmatch(namespace):
+    if not isinstance(namespace, str) or len(namespace) > 63 or not K8S_NAMESPACE.fullmatch(namespace):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes namespace.")
-    if not isinstance(name, str) or not K8S_NAME.fullmatch(name):
+    if not isinstance(name, str) or len(name) > 253 or not K8S_NAME.fullmatch(name):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes workload name.")
     if not isinstance(kind, str) or kind not in LOG_KINDS:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported Kubernetes workload kind.")
@@ -182,10 +229,17 @@ def create_command(request: CommandRequest) -> CommandRun:
     if request.command == "vm.health_check":
         if request.arguments:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="vm.health_check does not accept arguments.")
+        _require_known_machine(request.machineId)
         return store.create_command(request.machineId, request.command)
 
     if request.command == "k8s.logs":
         arguments = _validated_log_arguments(request.arguments)
+        _require_known_workload(
+            request.machineId,
+            str(arguments["namespace"]),
+            str(arguments["name"]),
+            str(arguments["kind"]),
+        )
         return store.create_command(request.machineId, request.command, arguments)
 
     if request.command == "k8s.restart_workload":
@@ -195,6 +249,12 @@ def create_command(request: CommandRequest) -> CommandRun:
                 detail="Mutating operations are disabled. Set REACTORACLE_ENABLE_MUTATIONS=true only behind the authenticated control-plane boundary.",
             )
         arguments = _validated_restart_arguments(request.arguments)
+        _require_known_workload(
+            request.machineId,
+            arguments["namespace"],
+            arguments["name"],
+            arguments["kind"],
+        )
         return store.create_command(request.machineId, request.command, arguments, risk="moderate")
 
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported command.")
