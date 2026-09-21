@@ -16,11 +16,14 @@ from .models import (
     CommandRequest,
     CommandRun,
     Capabilities,
+    GoldTableContract,
     InfrastructureSummary,
     MaintenanceSummary,
     Overview,
+    PlatformArchitecture,
     Workload,
 )
+from .platform_catalog import build_gold_catalog, build_platform_architecture
 from .state import store
 
 
@@ -83,6 +86,16 @@ def maintenance() -> MaintenanceSummary:
 @app.get("/api/v1/agent/status", response_model=AgentStatus)
 def agent_status() -> AgentStatus:
     return store.get_agent_status()
+
+
+@app.get("/api/v1/platform/architecture", response_model=PlatformArchitecture)
+def platform_architecture() -> PlatformArchitecture:
+    return build_platform_architecture()
+
+
+@app.get("/api/v1/platform/gold-catalog", response_model=list[GoldTableContract])
+def gold_catalog() -> list[GoldTableContract]:
+    return build_gold_catalog()
 
 
 def mutations_enabled() -> bool:
