@@ -8,12 +8,15 @@ The Oracle Ops Agent is a small Go binary that runs as a systemd service on the 
 - hostname and provisioned shape
 - OCPU and RAM
 - sampled host CPU usage
-- host memory usage
-- root filesystem usage
+- host memory and swap usage
+- 1-minute system load
+- root filesystem used/total capacity
+- host network RX/TX throughput
 - uptime
 - K3s version
 - Kubernetes workloads through read-only `kubectl get`
 - namespace/pod readiness
+- pod CPU/RAM from the Kubernetes metrics API when available, aggregated to namespaces and matching workloads
 - OS/kernel/reboot-required state
 
 The agent sends:
