@@ -11,6 +11,12 @@ CommandName = Literal["vm.health_check", "k8s.logs", "k8s.restart_workload"]
 CommandArgument = str | int | float | bool
 
 
+def require_timezone(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("timestamp must include a timezone offset.")
+    return value
+
+
 class VmSummary(BaseModel):
     id: str
     name: str
@@ -125,6 +131,8 @@ class AgentHeartbeat(BaseModel):
     k3sReachable: bool
     sentAt: datetime
 
+    _sent_at_timezone = field_validator("sentAt")(require_timezone)
+
 
 class HostSnapshot(BaseModel):
     id: str = Field(min_length=1, max_length=128)
@@ -157,6 +165,8 @@ class AgentSnapshot(BaseModel):
     machineId: str = Field(min_length=1, max_length=128)
     collectedAt: datetime
     host: HostSnapshot
+
+    _collected_at_timezone = field_validator("collectedAt")(require_timezone)
     workloads: list[Workload]
     namespaces: list[NamespaceSummary]
     maintenance: MaintenanceSummary
