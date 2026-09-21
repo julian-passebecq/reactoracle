@@ -37,6 +37,12 @@ class ControlPlaneStore:
             overview.vm.diskPercent = host.diskPercent
             overview.vm.uptime = host.uptime
             overview.vm.k3sVersion = host.k3sVersion
+            overview.vm.swapUsedGb = host.swapUsedGb
+            overview.vm.load1 = host.load1
+            overview.vm.diskUsedGb = host.diskUsedGb
+            overview.vm.diskTotalGb = host.diskTotalGb
+            overview.vm.networkRxMbps = host.networkRxMbps
+            overview.vm.networkTxMbps = host.networkTxMbps
             overview.workloads = snapshot.workloads
             overview.namespaces = snapshot.namespaces
             overview.maintenance = snapshot.maintenance
