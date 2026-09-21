@@ -22,6 +22,12 @@ class VmSummary(BaseModel):
     uptime: str
     projectedCost: str = "$0"
     k3sVersion: str
+    swapUsedGb: float = 0
+    load1: float = 0
+    diskUsedGb: float = 0
+    diskTotalGb: float = 0
+    networkRxMbps: float = 0
+    networkTxMbps: float = 0
 
 
 class ServiceSummary(BaseModel):
@@ -123,6 +129,12 @@ class HostSnapshot(BaseModel):
     diskPercent: float
     uptime: str
     k3sVersion: str
+    swapUsedGb: float = 0
+    load1: float = 0
+    diskUsedGb: float = 0
+    diskTotalGb: float = 0
+    networkRxMbps: float = 0
+    networkTxMbps: float = 0
 
 
 class AgentSnapshot(BaseModel):
