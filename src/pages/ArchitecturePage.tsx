@@ -131,7 +131,7 @@ export function ArchitecturePage() {
           <FlowLane ids={data.deliveryFlow} label="Code & delivery plane" nodes={nodeById} />
           <FlowLane ids={data.controlFlow} label="Control plane → Oracle compute" nodes={nodeById} />
           <FlowLane ids={data.engineeringFlow} label="Core data engineering → Gold" nodes={nodeById} />
-          <FlowLane ids={data.mlEnrichmentFlow} label="Optional ML enrichment → Gold history / compact serving state" nodes={nodeById} />
+          <FlowLane ids={data.mlEnrichmentFlow} label="Optional ML enrichment → durable DuckLake history" nodes={nodeById} />
         </div>
       </section>
 
