@@ -2,6 +2,7 @@ import { Divider, Text } from "@fluentui/react-components";
 import { Activity24Regular, Apps24Regular, Cloud24Regular, DataUsage24Regular, DocumentBulletList24Regular, Pulse24Regular, Server24Regular, Settings24Regular, Wrench24Regular } from "@fluentui/react-icons";
 import { NavLink, Outlet } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
+import { runtimeConfig } from "../config";
 
 const nav = [
   { to: "/", label: "Overview", icon: <Pulse24Regular />, end: true },
@@ -21,7 +22,7 @@ export function AppShell() {
       <div className="brand"><div className="brandMark">RO</div><div><Text weight="semibold">ReactOracle</Text><div className="muted small">Oracle data lab</div></div></div>
       <Divider />
       <nav aria-label="Primary navigation">{nav.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => "navItem " + (isActive ? "active" : "")}>{item.icon}<span>{item.label}</span></NavLink>)}</nav>
-      <div className="sidebarFooter"><StatusBadge status="healthy" /><Text size={200}>Mock control plane</Text></div>
+      <div className="sidebarFooter"><StatusBadge status={runtimeConfig.mode === "live" ? "healthy" : "idle"} /><Text size={200}>{runtimeConfig.mode} control plane</Text></div>
     </aside>
     <main className="content"><Outlet /></main>
   </div>;
