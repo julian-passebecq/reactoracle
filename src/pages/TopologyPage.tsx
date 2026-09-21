@@ -21,12 +21,14 @@ export function TopologyPage() {
 
   const persistent = data.workloads.filter((workload) => workload.kind !== "Job");
   const jobs = data.workloads.filter((workload) => workload.kind === "Job");
-  const platformHealth = derivePlatformHealth(data, agent.data?.connected, runtimeConfig.mode);
+  const platformHealth = derivePlatformHealth(data, agent.data?.connected, agent.data?.snapshotFresh, runtimeConfig.mode);
   const agentHealth = runtimeConfig.mode === "mock"
     ? "idle"
-    : agent.data?.connected
-      ? "healthy"
-      : "offline";
+    : !agent.data?.connected
+      ? "offline"
+      : agent.data.snapshotFresh
+        ? "healthy"
+        : "warning";
 
   return (
     <>
