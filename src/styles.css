@@ -227,3 +227,39 @@ tbody tr:last-child td { border-bottom: 0; }
 .architectureLanes, .factoryLanes { display: grid; gap: 18px; }
 .architectureLane, .factoryLanes > div { display: grid; gap: 8px; }
 .architectureLaneLabel { color: #424242; }
+
+.providerPolicyCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 18px;
+}
+.providerPolicyCard > div { display: grid; gap: 6px; max-width: 980px; }
+.providerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 14px;
+}
+.providerCard {
+  min-height: 235px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.providerFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.providerFacts > div {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #ededed;
+  border-radius: 6px;
+  background: #fafafa;
+}
+@media (max-width: 1200px) {
+  .providerGrid { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+}
