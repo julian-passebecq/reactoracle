@@ -994,3 +994,38 @@ def test_agent_rejects_machine_identity_switch(monkeypatch) -> None:
     assert switched.status_code == 409
     assert "oracle-primary" in switched.json()["detail"]
     assert "oracle-other" in switched.json()["detail"]
+
+
+def test_agent_command_result_payload_is_bounded(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    created = client.post(
+        "/api/v1/commands",
+        json={"command": "vm.health_check", "machineId": "oracle-result-limit"},
+    )
+    assert created.status_code == 202
+    command_id = created.json()["id"]
+
+    leased = client.get(
+        "/api/v1/agent/commands/next",
+        params={"machineId": "oracle-result-limit"},
+        headers={"Authorization": "Bearer test-token"},
+    )
+    assert leased.status_code == 200
+
+    oversized = client.post(
+        f"/api/v1/agent/commands/{command_id}/result",
+        headers={"Authorization": "Bearer test-token"},
+        json={"status": "success", "result": {"blob": "x" * (513 * 1024)}},
+    )
+    assert oversized.status_code == 422
+
+    still_running = client.get(f"/api/v1/commands/{command_id}")
+    assert still_running.status_code == 200
+    assert still_running.json()["status"] == "running"
+
+    completed = client.post(
+        f"/api/v1/agent/commands/{command_id}/result",
+        headers={"Authorization": "Bearer test-token"},
+        json={"status": "success", "result": {"ok": True}},
+    )
+    assert completed.status_code == 200
