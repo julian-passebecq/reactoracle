@@ -86,8 +86,15 @@ class ControlPlaneStore:
                 age = datetime.now(timezone.utc) - self._heartbeat.sentAt
                 age_seconds = age.total_seconds()
                 connected = 0 <= age_seconds < 90
+            snapshot_fresh = False
+            if self._snapshot_at is not None:
+                snapshot_age = datetime.now(timezone.utc) - self._snapshot_at
+                snapshot_age_seconds = snapshot_age.total_seconds()
+                snapshot_fresh = 0 <= snapshot_age_seconds < 120
+
             return AgentStatus(
                 connected=connected,
+                snapshotFresh=snapshot_fresh,
                 lastHeartbeat=deepcopy(self._heartbeat),
                 lastSnapshotAt=self._snapshot_at,
             )
