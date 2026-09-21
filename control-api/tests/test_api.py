@@ -75,6 +75,12 @@ def test_agent_snapshot_updates_read_model(monkeypatch) -> None:
             "diskPercent": 35.1,
             "uptime": "4d 02h",
             "k3sVersion": "k3s version v1.34.0",
+            "swapUsedGb": 0.2,
+            "load1": 0.7,
+            "diskUsedGb": 35.1,
+            "diskTotalGb": 100,
+            "networkRxMbps": 2.4,
+            "networkTxMbps": 0.9,
         },
         "workloads": [
             {
@@ -120,4 +126,6 @@ def test_agent_snapshot_updates_read_model(monkeypatch) -> None:
     overview = client.get("/api/v1/overview").json()
     assert overview["vm"]["id"] == "oracle-live"
     assert overview["vm"]["cpuPercent"] == 41.2
+    assert overview["vm"]["networkRxMbps"] == 2.4
+    assert overview["vm"]["diskTotalGb"] == 100
     assert overview["workloads"][0]["name"] == "grafana"
