@@ -3,9 +3,10 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timezone
 from threading import RLock
+from uuid import uuid4
 
 from .mock_data import build_mock_overview
-from .models import AgentHeartbeat, AgentSnapshot, AgentStatus, Overview, ServiceSummary
+from .models import AgentCommand, AgentCommandResult, AgentHeartbeat, AgentSnapshot, AgentStatus, CommandRun, Overview, ServiceSummary
 
 
 class ControlPlaneStore:
@@ -14,6 +15,8 @@ class ControlPlaneStore:
         self._overview = build_mock_overview()
         self._heartbeat: AgentHeartbeat | None = None
         self._snapshot_at: datetime | None = None
+        self._commands: dict[str, CommandRun] = {}
+        self._command_order: list[str] = []
 
     def get_overview(self) -> Overview:
         with self._lock:
@@ -61,6 +64,51 @@ class ControlPlaneStore:
                 lastHeartbeat=deepcopy(self._heartbeat),
                 lastSnapshotAt=self._snapshot_at,
             )
+
+
+    def create_health_check(self) -> CommandRun:
+        with self._lock:
+            run = CommandRun(
+                id=f"cmd_{uuid4().hex}",
+                command="vm.health_check",
+                status="queued",
+                createdAt=datetime.now(timezone.utc),
+            )
+            self._commands[run.id] = run
+            self._command_order.append(run.id)
+            return deepcopy(run)
+
+    def get_command(self, command_id: str) -> CommandRun | None:
+        with self._lock:
+            run = self._commands.get(command_id)
+            return deepcopy(run) if run else None
+
+    def recent_commands(self, limit: int = 20) -> list[CommandRun]:
+        with self._lock:
+            ids = self._command_order[-max(1, min(limit, 100)):]
+            return [deepcopy(self._commands[item]) for item in reversed(ids)]
+
+    def lease_next_command(self) -> AgentCommand | None:
+        with self._lock:
+            for command_id in self._command_order:
+                run = self._commands[command_id]
+                if run.status == "queued":
+                    run.status = "running"
+                    self._commands[command_id] = run
+                    return AgentCommand(id=run.id, command=run.command)
+            return None
+
+    def complete_command(self, command_id: str, result: AgentCommandResult) -> CommandRun | None:
+        with self._lock:
+            run = self._commands.get(command_id)
+            if run is None:
+                return None
+            run.status = result.status
+            run.result = result.result
+            run.error = result.error
+            run.completedAt = datetime.now(timezone.utc)
+            self._commands[command_id] = run
+            return deepcopy(run)
 
     @staticmethod
     def _derive_services(snapshot: AgentSnapshot, previous: list[ServiceSummary]) -> list[ServiceSummary]:
