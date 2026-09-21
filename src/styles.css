@@ -192,3 +192,34 @@ tbody tr:last-child td { border-bottom: 0; }
   .architecturePrinciple { align-items: flex-start; flex-direction: column; }
   .durableZoneGrid, .architectureCardGrid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
 }
+
+.factoryNotice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 22px;
+  border: 1px solid #f2c661;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+.factoryNotice > div { display: grid; gap: 7px; max-width: 980px; }
+.factoryPipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+}
+.factoryStageWrap { display: flex; align-items: stretch; gap: 8px; flex: 0 0 auto; }
+.factoryStageCard {
+  width: 205px;
+  min-height: 175px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.factoryZoneRow { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+@media (max-width: 1200px) {
+  .factoryNotice { align-items: flex-start; flex-direction: column; }
+}
