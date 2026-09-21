@@ -443,3 +443,21 @@ def test_provider_inventory_avoids_unverified_quota_claims() -> None:
 
     colab = next(provider for provider in providers if provider["id"] == "colab")
     assert colab["state"] == "optional"
+
+
+def test_k8s_logs_rejects_extra_arguments() -> None:
+    response = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.logs",
+            "machineId": "oracle-log-test",
+            "arguments": {
+                "namespace": "airflow",
+                "name": "airflow-scheduler",
+                "kind": "Deployment",
+                "tail": 100,
+                "container": "unexpected",
+            },
+        },
+    )
+    assert response.status_code == 422
