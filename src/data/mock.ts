@@ -1,33 +1,75 @@
-export type Health = "healthy" | "idle" | "warning" | "offline";
+import type { Overview } from "../domain/types";
 
-export const vm = {
-  name: "oracle-a1-01",
-  shape: "VM.Standard.A1.Flex",
-  ocpu: 2,
-  memoryGb: 12,
-  cpuPercent: 23,
-  memoryUsedGb: 5.9,
-  diskPercent: 31,
-  uptime: "16d 04h",
-  projectedCost: "$0",
+export const overviewMock: Overview = {
+  vm: {
+    id: "oracle-a1-01",
+    name: "oracle-a1-01",
+    provider: "oci",
+    shape: "VM.Standard.A1.Flex",
+    ocpu: 2,
+    memoryGb: 12,
+    cpuPercent: 23,
+    memoryUsedGb: 5.9,
+    diskPercent: 31,
+    uptime: "16d 04h",
+    projectedCost: "$0",
+    k3sVersion: "v1.34",
+  },
+  services: [
+    { id: "k3s", name: "K3s", category: "platform", status: "healthy", detail: "14 / 14 pods", memoryMb: 720 },
+    { id: "airflow", name: "Airflow", category: "data", status: "healthy", detail: "scheduler healthy", memoryMb: 830 },
+    { id: "spark", name: "Spark", category: "data", status: "idle", detail: "no active application", memoryMb: 280 },
+    { id: "grafana", name: "Grafana", category: "monitoring", status: "healthy", detail: "dashboards available", memoryMb: 230 },
+    { id: "prometheus", name: "Prometheus", category: "monitoring", status: "healthy", detail: "metrics scraping", memoryMb: 680 },
+    { id: "loki", name: "Loki", category: "monitoring", status: "healthy", detail: "logs ingesting", memoryMb: 390 },
+    { id: "kafka", name: "Kafka", category: "external", status: "healthy", detail: "Aiven / external" },
+  ],
+  workloads: [
+    { id: "airflow-api", name: "airflow-api", namespace: "airflow", kind: "Deployment", status: "Running", cpuMillicores: 65, memoryMb: 320, restarts: 0 },
+    { id: "airflow-scheduler", name: "airflow-scheduler", namespace: "airflow", kind: "Deployment", status: "Running", cpuMillicores: 120, memoryMb: 510, restarts: 0 },
+    { id: "postgres", name: "postgres", namespace: "airflow", kind: "StatefulSet", status: "Running", cpuMillicores: 35, memoryMb: 420, restarts: 0 },
+    { id: "spark-history", name: "spark-history", namespace: "spark", kind: "Deployment", status: "Running", cpuMillicores: 30, memoryMb: 280, restarts: 0 },
+    { id: "grafana", name: "grafana", namespace: "monitoring", kind: "Deployment", status: "Running", cpuMillicores: 35, memoryMb: 230, restarts: 0 },
+    { id: "prometheus", name: "prometheus", namespace: "monitoring", kind: "StatefulSet", status: "Running", cpuMillicores: 85, memoryMb: 680, restarts: 0 },
+    { id: "loki", name: "loki", namespace: "monitoring", kind: "StatefulSet", status: "Running", cpuMillicores: 45, memoryMb: 390, restarts: 0 },
+  ],
+  namespaces: [
+    { name: "airflow", podsReady: 3, podsTotal: 3, cpuMillicores: 220, memoryMb: 1250 },
+    { name: "spark", podsReady: 1, podsTotal: 1, cpuMillicores: 30, memoryMb: 280 },
+    { name: "monitoring", podsReady: 5, podsTotal: 5, cpuMillicores: 210, memoryMb: 1780 },
+    { name: "kube-system", podsReady: 5, podsTotal: 5, cpuMillicores: 140, memoryMb: 920 },
+  ],
+  infrastructure: {
+    state: "synced",
+    managedResources: 9,
+    lastPlan: "22 min ago",
+    drift: "None detected",
+    publicIp: "hidden until live connection",
+    bootVolumeGb: 100,
+    vcn: "oracle-lab",
+    subnet: "public-subnet",
+    tofuRuns: [
+      { id: "42", action: "PLAN", status: "success", summary: "No changes", duration: "8 sec", when: "Today 16:21" },
+      { id: "41", action: "APPLY", status: "success", summary: "1 update", duration: "27 sec", when: "Yesterday" },
+      { id: "40", action: "VALIDATE", status: "success", summary: "Configuration valid", duration: "4 sec", when: "Yesterday" },
+    ],
+  },
+  maintenance: {
+    os: "Ubuntu 24.04",
+    kernel: "6.x",
+    updatesAvailable: 7,
+    securityUpdates: 2,
+    rebootRequired: false,
+    unusedImagesGb: 2.7,
+    prometheusGb: 4.1,
+    lokiGb: 2.8,
+    lastBackup: "Today 03:00",
+    backupStatus: "success",
+  },
+  activity: [
+    { id: "a1", when: "16:42", actor: "system", action: "Spark job customer-etl completed", status: "success" },
+    { id: "a2", when: "16:21", actor: "julian", action: "OpenTofu plan completed: no changes", status: "success" },
+    { id: "a3", when: "15:51", actor: "system", action: "2 Ubuntu security updates detected", status: "warning" },
+    { id: "a4", when: "12:20", actor: "airflow", action: "dbt build completed", status: "success" },
+  ],
 };
-
-export const services: Array<{ name: string; status: Health; detail: string }> = [
-  { name: "K3s", status: "healthy", detail: "14 / 14 pods" },
-  { name: "Airflow", status: "healthy", detail: "scheduler healthy" },
-  { name: "Spark", status: "idle", detail: "no active application" },
-  { name: "Grafana", status: "healthy", detail: "dashboards available" },
-  { name: "Prometheus", status: "healthy", detail: "metrics scraping" },
-  { name: "Loki", status: "healthy", detail: "logs ingesting" },
-  { name: "Kafka", status: "healthy", detail: "Aiven / external" },
-];
-
-export const workloads = [
-  ["airflow-api", "airflow", "Deployment", "Running", "320 MB"],
-  ["airflow-scheduler", "airflow", "Deployment", "Running", "510 MB"],
-  ["postgres", "airflow", "StatefulSet", "Running", "420 MB"],
-  ["spark-history", "spark", "Deployment", "Running", "280 MB"],
-  ["grafana", "monitoring", "Deployment", "Running", "230 MB"],
-  ["prometheus", "monitoring", "StatefulSet", "Running", "680 MB"],
-  ["loki", "monitoring", "StatefulSet", "Running", "390 MB"],
-];
