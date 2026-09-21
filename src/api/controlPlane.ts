@@ -1,4 +1,4 @@
-import type { InfrastructureSummary, MaintenanceSummary, Overview, Workload } from "../domain/types";
+import type { AgentStatus, InfrastructureSummary, MaintenanceSummary, Overview, Workload } from "../domain/types";
 import { overviewMock } from "../data/mock";
 import { runtimeConfig } from "../config";
 
@@ -9,6 +9,7 @@ export interface ControlPlaneClient {
   getWorkloads(): Promise<Workload[]>;
   getInfrastructure(): Promise<InfrastructureSummary>;
   getMaintenance(): Promise<MaintenanceSummary>;
+  getAgentStatus(): Promise<AgentStatus>;
 }
 
 class MockControlPlaneClient implements ControlPlaneClient {
@@ -16,6 +17,7 @@ class MockControlPlaneClient implements ControlPlaneClient {
   async getWorkloads() { await delay(); return overviewMock.workloads; }
   async getInfrastructure() { await delay(); return overviewMock.infrastructure; }
   async getMaintenance() { await delay(); return overviewMock.maintenance; }
+  async getAgentStatus() { await delay(); return { connected: false, lastHeartbeat: null, lastSnapshotAt: null }; }
 }
 
 class HttpControlPlaneClient implements ControlPlaneClient {
@@ -35,6 +37,7 @@ class HttpControlPlaneClient implements ControlPlaneClient {
   getWorkloads() { return this.get<Workload[]>("/api/v1/k8s/workloads"); }
   getInfrastructure() { return this.get<InfrastructureSummary>("/api/v1/infrastructure"); }
   getMaintenance() { return this.get<MaintenanceSummary>("/api/v1/maintenance"); }
+  getAgentStatus() { return this.get<AgentStatus>("/api/v1/agent/status"); }
 }
 
 export const controlPlane: ControlPlaneClient = runtimeConfig.mode === "live"
