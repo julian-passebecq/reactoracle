@@ -34,26 +34,33 @@ Ephemeral Kubernetes Jobs: Spark applications, dbt, Polars and maintenance jobs.
 
 External: Kafka, FastAPI application backend, MotherDuck, Neon and frontend hosting.
 
-Future source layer: ReactOracle can optionally call a headless Contoso Forge derivative to generate deterministic synthetic source data. That generator is not required for normal Airflow/Spark use. Small/medium scenarios may first load an optional source-system Neon/PostgreSQL database; large scenarios should flow as Parquet/object/file outputs directly into Airflow/Spark.
+Future source layer: ReactOracle can optionally call a headless Contoso Forge derivative to generate deterministic synthetic Parquet plus ML ground truth. That generator is not required for normal Airflow/Spark use.
+
+The durable analytical plane is MotherDuck / DuckLake. Oracle K3s is compute and orchestration; it is not the canonical home of Raw, Bronze, Silver, Gold or feature data.
 
 The intended complete lineage is:
 
 ```text
 optional Contoso generator
-        -> optional source Neon
+        -> Parquet + truth manifest
+        -> MotherDuck / DuckLake Raw
         -> Airflow
         -> Spark on K3s
-        -> Bronze/Silver/Gold/features
+        -> MotherDuck / DuckLake Bronze/Silver/Gold/features
         -> Kaggle/MLJAR
-        -> result/serving Neon
-        -> dbt / BI
+        -> lakehouse history + optional Neon serving metadata
+        -> dbt / BI / SQL consumers
 ```
+
+If the Oracle VM is stopped or rebuilt, durable analytical tables must remain available in the external lakehouse.
 
 V1 exposes this architecture and capability model; generator execution is a later vertical slice.
 
 ## Frontend modules
 
 - Overview
+- Architecture
+- Topology
 - Infrastructure / OpenTofu
 - Kubernetes
 - Data Platform
@@ -63,6 +70,6 @@ V1 exposes this architecture and capability model; generator execution is a late
 - Activity
 - Settings
 
-A future Data Factory / source layer is documented in `docs/DATA_FACTORY_ROADMAP.md`.
+The future Data Factory / source layer is documented in `docs/DATA_FACTORY_ROADMAP.md`. The Gold serving boundary is documented in `docs/GOLD_SERVING.md`. Business-specific React dashboards are outside this repository; ReactOracle serves and exposes Gold rather than implementing the consuming application.
 
 The first implementation is UI-first with typed mock data. Live adapters should be introduced behind stable domain interfaces rather than wiring UI components directly to Kubernetes or OCI APIs.
