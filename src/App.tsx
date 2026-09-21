@@ -9,12 +9,14 @@ import { MaintenancePage } from "./pages/MaintenancePage";
 import { MonitoringPage } from "./pages/MonitoringPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { TopologyPage } from "./pages/TopologyPage";
 
 export default function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<OverviewPage />} />
+        <Route path="topology" element={<TopologyPage />} />
         <Route path="infrastructure" element={<InfrastructurePage />} />
         <Route path="kubernetes" element={<KubernetesPage />} />
         <Route path="data-platform" element={<DataPlatformPage />} />
