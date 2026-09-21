@@ -180,6 +180,7 @@ func TestBuildLogCommand(t *testing.T) {
 func TestBuildLogCommandRejectsUnsafeArguments(t *testing.T) {
 	cases := []map[string]any{
 		{"namespace": "airflow;rm", "name": "scheduler", "kind": "Deployment", "tail": float64(100)},
+		{"namespace": "monitoring.v1", "name": "scheduler", "kind": "Deployment", "tail": float64(100)},
 		{"namespace": "airflow", "name": "scheduler", "kind": "Pod", "tail": float64(100)},
 		{"namespace": "airflow", "name": "scheduler", "kind": "Deployment", "tail": float64(5000)},
 		{"namespace": "airflow", "name": "scheduler", "kind": "Deployment", "tail": float64(100), "container": "unexpected"},
@@ -187,6 +188,21 @@ func TestBuildLogCommandRejectsUnsafeArguments(t *testing.T) {
 	for _, arguments := range cases {
 		if _, _, err := buildLogCommand(arguments); err == nil {
 			t.Fatalf("expected validation error for %#v", arguments)
+		}
+	}
+}
+
+func TestSafeKubernetesNamespace(t *testing.T) {
+	valid := []string{"airflow", "spark-history", "monitoring"}
+	for _, value := range valid {
+		if !isSafeKubernetesNamespace(value) {
+			t.Fatalf("expected valid Kubernetes namespace %q", value)
+		}
+	}
+	invalid := []string{"", "-airflow", "airflow-", "monitoring.v1", "Airflow", "airflow;rm", `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`}
+	for _, value := range invalid {
+		if isSafeKubernetesNamespace(value) {
+			t.Fatalf("expected invalid Kubernetes namespace %q", value)
 		}
 	}
 }
@@ -296,6 +312,7 @@ func TestBuildRestartCommand(t *testing.T) {
 func TestBuildRestartCommandRejectsUnsafeOrUnsupportedTargets(t *testing.T) {
 	cases := []map[string]any{
 		{"namespace": "airflow;rm", "name": "scheduler", "kind": "Deployment"},
+		{"namespace": "monitoring.v1", "name": "scheduler", "kind": "Deployment"},
 		{"namespace": "airflow", "name": "scheduler", "kind": "Job"},
 		{"namespace": "airflow", "name": "scheduler", "kind": "Deployment", "image": "bad"},
 	}
