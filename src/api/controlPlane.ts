@@ -1,5 +1,7 @@
-import type { AgentStatus, Capabilities, CommandRun, InfrastructureSummary, LogQueryInput, MaintenanceSummary, Overview, RestartWorkloadInput, Workload } from "../domain/types";
+import type { AgentStatus, Capabilities, CommandRun, GoldTableContract, InfrastructureSummary, LogQueryInput, MaintenanceSummary, Overview, PlatformArchitecture, RestartWorkloadInput, Workload } from "../domain/types";
 import { overviewMock } from "../data/mock";
+import { platformArchitectureMock } from "../data/architecture";
+import { goldTableCatalog } from "../data/goldCatalog";
 import { runtimeConfig } from "../config";
 
 const delay = (ms = 160) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -11,6 +13,8 @@ export interface ControlPlaneClient {
   getMaintenance(): Promise<MaintenanceSummary>;
   getAgentStatus(): Promise<AgentStatus>;
   getCapabilities(): Promise<Capabilities>;
+  getPlatformArchitecture(): Promise<PlatformArchitecture>;
+  getGoldCatalog(): Promise<GoldTableContract[]>;
   runHealthCheck(machineId: string): Promise<CommandRun>;
   runLogQuery(input: LogQueryInput): Promise<CommandRun>;
   restartWorkload(input: RestartWorkloadInput): Promise<CommandRun>;
@@ -26,6 +30,8 @@ class MockControlPlaneClient implements ControlPlaneClient {
   async getMaintenance() { await delay(); return overviewMock.maintenance; }
   async getAgentStatus() { await delay(); return { connected: false, lastHeartbeat: null, lastSnapshotAt: null }; }
   async getCapabilities() { await delay(); return { restartWorkload: true }; }
+  async getPlatformArchitecture() { await delay(); return platformArchitectureMock; }
+  async getGoldCatalog() { await delay(); return goldTableCatalog; }
 
   async runHealthCheck(machineId: string) {
     await delay(120);
@@ -178,6 +184,8 @@ class HttpControlPlaneClient implements ControlPlaneClient {
   getMaintenance() { return this.get<MaintenanceSummary>("/api/v1/maintenance"); }
   getAgentStatus() { return this.get<AgentStatus>("/api/v1/agent/status"); }
   getCapabilities() { return this.get<Capabilities>("/api/v1/capabilities"); }
+  getPlatformArchitecture() { return this.get<PlatformArchitecture>("/api/v1/platform/architecture"); }
+  getGoldCatalog() { return this.get<GoldTableContract[]>("/api/v1/platform/gold-catalog"); }
   runHealthCheck(machineId: string) {
     return this.request<CommandRun>("/api/v1/commands", {
       method: "POST",
