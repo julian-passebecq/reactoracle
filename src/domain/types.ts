@@ -115,14 +115,39 @@ export type AgentStatus = {
   lastSnapshotAt: string | null;
 };
 
+export type CommandName = "vm.health_check" | "k8s.logs";
+
+export type CommandArgument = string | number | boolean;
+
 export type CommandRun = {
   id: string;
   machineId: string;
-  command: "vm.health_check";
+  command: CommandName;
+  arguments: Record<string, CommandArgument>;
   status: "queued" | "running" | "success" | "failed";
   risk: "safe";
   createdAt: string;
   completedAt: string | null;
   result: Record<string, unknown> | null;
   error: string | null;
+};
+
+
+export type LogQueryInput = {
+  machineId: string;
+  namespace: string;
+  name: string;
+  kind: Workload["kind"];
+  tail: number;
+};
+
+export type LogQueryResult = {
+  namespace: string;
+  workload: string;
+  kind: Workload["kind"];
+  tail: number;
+  lineCount: number;
+  text: string;
+  truncated: boolean;
+  collectedAt: string;
 };
