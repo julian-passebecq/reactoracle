@@ -269,11 +269,67 @@ func processNextCommand(
 		}
 	case "k8s.logs":
 		result = executeLogCommand(ctx, command.Arguments)
+	case "k8s.restart_workload":
+		result = executeRestartCommand(ctx, command.Arguments)
 	default:
 		result.Error = "unsupported command"
 	}
 
 	return postJSON(ctx, client, cfg, "/api/v1/agent/commands/"+url.PathEscape(command.ID)+"/result", result)
+}
+
+func executeRestartCommand(ctx context.Context, arguments map[string]any) CommandResult {
+	args, metadata, err := buildRestartCommand(arguments)
+	if err != nil {
+		return CommandResult{Status: "failed", Error: err.Error()}
+	}
+
+	if _, err := kubectlOutput(ctx, args...); err != nil {
+		return CommandResult{Status: "failed", Error: "kubectl rollout restart failed: " + err.Error()}
+	}
+
+	metadata["restartedAt"] = time.Now().UTC().Format(time.RFC3339)
+	return CommandResult{Status: "success", Result: metadata}
+}
+
+func buildRestartCommand(arguments map[string]any) ([]string, map[string]any, error) {
+	if len(arguments) != 3 {
+		return nil, nil, errors.New("restart accepts only namespace, name and kind")
+	}
+
+	namespace, ok := arguments["namespace"].(string)
+	if !ok || !isSafeKubernetesName(namespace) {
+		return nil, nil, errors.New("invalid Kubernetes namespace")
+	}
+	name, ok := arguments["name"].(string)
+	if !ok || !isSafeKubernetesName(name) {
+		return nil, nil, errors.New("invalid Kubernetes workload name")
+	}
+	kind, ok := arguments["kind"].(string)
+	if !ok {
+		return nil, nil, errors.New("missing Kubernetes workload kind")
+	}
+
+	resourceKind := ""
+	switch kind {
+	case "Deployment":
+		resourceKind = "deployment"
+	case "StatefulSet":
+		resourceKind = "statefulset"
+	case "DaemonSet":
+		resourceKind = "daemonset"
+	default:
+		return nil, nil, errors.New("unsupported restart workload kind")
+	}
+
+	resource := resourceKind + "/" + name
+	args := []string{"rollout", "restart", "-n", namespace, resource}
+	metadata := map[string]any{
+		"namespace": namespace,
+		"workload":  name,
+		"kind":      kind,
+	}
+	return args, metadata, nil
 }
 
 func executeLogCommand(ctx context.Context, arguments map[string]any) CommandResult {
