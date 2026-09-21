@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import secrets
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
@@ -31,7 +32,7 @@ from .state import store
 app = FastAPI(
     title="ReactOracle Control API",
     version="0.1.0",
-    description="Read-only control plane and Oracle agent ingress for ReactOracle.",
+    description="Read-mostly control plane and Oracle agent ingress for ReactOracle.",
 )
 
 origins = [item.strip() for item in os.getenv("REACTORACLE_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if item.strip()]
@@ -55,7 +56,7 @@ def require_agent_token(authorization: Annotated[str | None, Header()] = None) -
             detail="Agent ingress is disabled until REACTORACLE_AGENT_TOKEN is configured.",
         )
     expected = f"Bearer {configured}"
-    if authorization != expected:
+    if authorization is None or not secrets.compare_digest(authorization, expected):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid agent token.")
 
 
