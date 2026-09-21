@@ -3,11 +3,11 @@ import { useDataFactoryPlan } from "../api/queries";
 import { PageHeader } from "../components/PageHeader";
 import type { DataFactoryStage, DataFactoryStageState } from "../domain/types";
 
-const stageColor: Record<DataFactoryStageState, "success" | "warning" | "informative" | "subtle"> = {
-  live: "success",
-  planned: "warning",
-  external: "informative",
-  optional: "subtle",
+const stagePresentation: Record<DataFactoryStageState, { color: "success" | "warning" | "informative" | "subtle"; label: string }> = {
+  live: { color: "success", label: "Implemented" },
+  planned: { color: "warning", label: "Planned" },
+  external: { color: "informative", label: "External" },
+  optional: { color: "subtle", label: "Optional" },
 };
 
 function StageLane({ stages }: { stages: DataFactoryStage[] }) {
@@ -18,7 +18,7 @@ function StageLane({ stages }: { stages: DataFactoryStage[] }) {
           <Card className="factoryStageCard">
             <div className="cardTop">
               <Text weight="semibold">{stage.name}</Text>
-              <Badge color={stageColor[stage.state]}>{stage.state}</Badge>
+              <Badge color={stagePresentation[stage.state].color}>{stagePresentation[stage.state].label}</Badge>
             </div>
             <Title3>{stage.engine}</Title3>
             <Text size={200} className="muted">{stage.location}</Text>
