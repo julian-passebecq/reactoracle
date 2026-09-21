@@ -182,6 +182,7 @@ func TestBuildLogCommandRejectsUnsafeArguments(t *testing.T) {
 		{"namespace": "airflow;rm", "name": "scheduler", "kind": "Deployment", "tail": float64(100)},
 		{"namespace": "airflow", "name": "scheduler", "kind": "Pod", "tail": float64(100)},
 		{"namespace": "airflow", "name": "scheduler", "kind": "Deployment", "tail": float64(5000)},
+		{"namespace": "airflow", "name": "scheduler", "kind": "Deployment", "tail": float64(100), "container": "unexpected"},
 	}
 	for _, arguments := range cases {
 		if _, _, err := buildLogCommand(arguments); err == nil {
