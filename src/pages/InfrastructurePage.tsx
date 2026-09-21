@@ -1,12 +1,27 @@
 import { Badge, Button, Card, CardHeader, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useInfrastructure, useOverview } from "../api/queries";
+import { DataError } from "../components/DataError";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function InfrastructurePage() {
   const infrastructure = useInfrastructure();
   const overview = useOverview();
-  if (!infrastructure.data || !overview.data) return <div className="loadingState"><Spinner label="Loading infrastructure" /></div>;
+  if (infrastructure.isLoading || overview.isLoading) {
+    return <div className="loadingState"><Spinner label="Loading infrastructure" /></div>;
+  }
+  if (infrastructure.isError || overview.isError || !infrastructure.data || !overview.data) {
+    return (
+      <DataError
+        title="Infrastructure state unavailable"
+        error={infrastructure.error ?? overview.error}
+        onRetry={() => {
+          void infrastructure.refetch();
+          void overview.refetch();
+        }}
+      />
+    );
+  }
   const infra = infrastructure.data;
   const vm = overview.data.vm;
   return <>
