@@ -1,14 +1,20 @@
 import { Card, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useOverview } from "../api/queries";
+import { DataError } from "../components/DataError";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function TopologyPage() {
-  const { data, isLoading } = useOverview();
+  const overview = useOverview();
 
-  if (isLoading || !data) {
+  if (overview.isLoading) {
     return <div className="loadingState"><Spinner label="Loading platform topology" /></div>;
   }
+  if (overview.isError || !overview.data) {
+    return <DataError title="Platform topology unavailable" error={overview.error} onRetry={() => void overview.refetch()} />;
+  }
+
+  const data = overview.data;
 
   const persistent = data.workloads.filter((workload) => workload.kind !== "Job");
   const jobs = data.workloads.filter((workload) => workload.kind === "Job");
