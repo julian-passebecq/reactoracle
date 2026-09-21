@@ -227,3 +227,20 @@ class GoldTableContract(BaseModel):
     storage: str
     mlDerived: bool = False
     status: Literal["planned", "available"] = "planned"
+
+
+class ProviderInventoryItem(BaseModel):
+    id: str
+    name: str
+    category: Literal["compute", "code", "cicd", "lakehouse", "streaming", "database", "ml", "edge", "api", "lab", "artifacts"]
+    state: ArchitectureState
+    role: str
+    costIntent: Literal["free-tier", "no-cost", "unknown"]
+    telemetry: Literal["live", "partial", "not-connected"]
+    limitsVerified: bool = False
+    detail: str
+
+
+class ProviderInventory(BaseModel):
+    providers: list[ProviderInventoryItem]
+    usageBarsRequireVerifiedLimits: bool = True
