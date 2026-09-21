@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 
 
 Health = Literal["healthy", "idle", "warning", "offline"]
+CommandName = Literal["vm.health_check", "k8s.logs"]
+CommandArgument = str | int | float | bool
 
 
 class VmSummary(BaseModel):
@@ -153,14 +155,16 @@ class AgentStatus(BaseModel):
 
 
 class CommandRequest(BaseModel):
-    command: Literal["vm.health_check"]
+    command: CommandName
     machineId: str
+    arguments: dict[str, CommandArgument] = Field(default_factory=dict)
 
 
 class CommandRun(BaseModel):
     id: str
     machineId: str
-    command: Literal["vm.health_check"]
+    command: CommandName
+    arguments: dict[str, CommandArgument] = Field(default_factory=dict)
     status: Literal["queued", "running", "success", "failed"]
     risk: Literal["safe"] = "safe"
     createdAt: datetime
@@ -172,7 +176,8 @@ class CommandRun(BaseModel):
 class AgentCommand(BaseModel):
     id: str
     machineId: str
-    command: Literal["vm.health_check"]
+    command: CommandName
+    arguments: dict[str, CommandArgument] = Field(default_factory=dict)
 
 
 class AgentCommandResult(BaseModel):
