@@ -1,5 +1,6 @@
 import { Button, Card, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useCapabilities, useOverview, useWorkloads } from "../api/queries";
+import { DataError } from "../components/DataError";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
@@ -10,7 +11,22 @@ export function KubernetesPage() {
   const overview = useOverview();
   const workloads = useWorkloads();
   const capabilities = useCapabilities();
-  if (!overview.data || !workloads.data) return <div className="loadingState"><Spinner label="Loading Kubernetes" /></div>;
+  if (overview.isLoading || workloads.isLoading) {
+    return <div className="loadingState"><Spinner label="Loading Kubernetes" /></div>;
+  }
+  if (overview.isError || workloads.isError || !overview.data || !workloads.data) {
+    return (
+      <DataError
+        title="Kubernetes state unavailable"
+        error={overview.error ?? workloads.error}
+        onRetry={() => {
+          void overview.refetch();
+          void workloads.refetch();
+          void capabilities.refetch();
+        }}
+      />
+    );
+  }
   const namespaces = overview.data.namespaces;
   const podTotal = namespaces.reduce((sum, item) => sum + item.podsTotal, 0);
   const podReady = namespaces.reduce((sum, item) => sum + item.podsReady, 0);
