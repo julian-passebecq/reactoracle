@@ -77,8 +77,19 @@ function FlowLane({
 export function ArchitecturePage() {
   const architecture = usePlatformArchitecture();
 
-  if (architecture.isLoading || !architecture.data) {
+  if (architecture.isLoading) {
     return <div className="loadingState"><Spinner label="Loading platform architecture" /></div>;
+  }
+
+  if (architecture.isError || !architecture.data) {
+    return (
+      <Card className="errorCard">
+        <Title3>Architecture contract unavailable</Title3>
+        <Text className="muted">
+          {architecture.error instanceof Error ? architecture.error.message : "The control plane did not return a platform architecture."}
+        </Text>
+      </Card>
+    );
   }
 
   const data = architecture.data;
