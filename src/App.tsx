@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
 import { ActivityPage } from "./pages/ActivityPage";
 import { ArchitecturePage } from "./pages/ArchitecturePage";
+import { DataFactoryPage } from "./pages/DataFactoryPage";
 import { DataPlatformPage } from "./pages/DataPlatformPage";
 import { InfrastructurePage } from "./pages/InfrastructurePage";
 import { KubernetesPage } from "./pages/KubernetesPage";
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="topology" element={<TopologyPage />} />
         <Route path="infrastructure" element={<InfrastructurePage />} />
         <Route path="kubernetes" element={<KubernetesPage />} />
+        <Route path="data-factory" element={<DataFactoryPage />} />
         <Route path="data-platform" element={<DataPlatformPage />} />
         <Route path="monitoring" element={<MonitoringPage />} />
         <Route path="logs" element={<LogsPage />} />
