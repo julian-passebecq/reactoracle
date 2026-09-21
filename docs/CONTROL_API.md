@@ -143,3 +143,25 @@ This preserves the outbound-only design while giving the React UI a useful live 
 Only Deployment, StatefulSet and DaemonSet are accepted. Extra arguments are rejected. The agent constructs a fixed `kubectl rollout restart` invocation; it never accepts a shell fragment from the browser.
 
 Enablement requires both the Control API capability flag and the separate Kubernetes restart RBAC overlay. `GET /api/v1/capabilities` exposes whether restart is currently enabled at the API layer.
+
+
+## Platform architecture read model
+
+ReactOracle V1 exposes machine-readable platform contracts so the frontend does not have to hard-code the future topology when live mode is enabled.
+
+```text
+GET /api/v1/platform/architecture
+GET /api/v1/platform/gold-catalog
+```
+
+The architecture response includes:
+
+- provider/system nodes and their lifecycle state (`live`, `external`, `planned`, `optional`);
+- the core data-engineering flow that ends at durable Gold;
+- a separate optional ML-enrichment flow;
+- durable data zones;
+- explicit invariants that Gold survives Oracle VM shutdown and business React applications are outside ReactOracle scope.
+
+The core flow intentionally does **not** depend on Kaggle or Neon. Kaggle is an optional branch from feature data and its historical analytical outputs return to the lakehouse. Neon can mirror compact latest-state / metadata tables when needed.
+
+The Gold catalog describes stable serving contracts such as `gold.sales_daily`, `gold.customer_360`, and `gold.delivery_performance`. Each entry includes grain, purpose, consumers, storage target, ML-derived flag and lifecycle status.
