@@ -1,6 +1,7 @@
-import { Badge, Card, Text, Title2, Title3 } from "@fluentui/react-components";
+import { Badge, Card, Spinner, Text, Title2, Title3 } from "@fluentui/react-components";
+import { usePlatformArchitecture } from "../api/queries";
 import { PageHeader } from "../components/PageHeader";
-import { architectureNodes, durableDataZones, engineeringFlow, mlEnrichmentFlow, type ArchitectureNode, type ArchitectureState } from "../data/architecture";
+import type { ArchitectureState, PlatformNode } from "../domain/types";
 
 const stateAppearance: Record<ArchitectureState, { color: "success" | "informative" | "warning" | "subtle"; label: string }> = {
   live: { color: "success", label: "Live" },
@@ -9,14 +10,12 @@ const stateAppearance: Record<ArchitectureState, { color: "success" | "informati
   optional: { color: "subtle", label: "Optional" },
 };
 
-const nodeById = new Map(architectureNodes.map((node) => [node.id, node]));
-
 function ArchitectureBadge({ state }: { state: ArchitectureState }) {
   const presentation = stateAppearance[state];
   return <Badge color={presentation.color}>{presentation.label}</Badge>;
 }
 
-function ArchitectureCard({ node }: { node: ArchitectureNode }) {
+function ArchitectureCard({ node }: { node: PlatformNode }) {
   return (
     <Card className="architectureNodeCard">
       <div className="cardTop">
@@ -35,7 +34,7 @@ function ArchitectureCard({ node }: { node: ArchitectureNode }) {
   );
 }
 
-function FlowNode({ node }: { node: ArchitectureNode }) {
+function FlowNode({ node }: { node: PlatformNode }) {
   return (
     <div className="megaFlowNode">
       <div className="megaFlowNodeHeader">
@@ -47,13 +46,21 @@ function FlowNode({ node }: { node: ArchitectureNode }) {
   );
 }
 
-function FlowLane({ ids, label }: { ids: string[]; label: string }) {
+function FlowLane({
+  ids,
+  label,
+  nodes,
+}: {
+  ids: string[];
+  label: string;
+  nodes: Map<string, PlatformNode>;
+}) {
   return (
     <div className="architectureLane">
       <Text size={200} weight="semibold" className="architectureLaneLabel">{label}</Text>
       <div className="megaFlow">
         {ids.map((id, index) => {
-          const node = nodeById.get(id);
+          const node = nodes.get(id);
           if (!node) return null;
           return (
             <div className="megaFlowStep" key={label + "-" + id + "-" + index}>
@@ -68,8 +75,16 @@ function FlowLane({ ids, label }: { ids: string[]; label: string }) {
 }
 
 export function ArchitecturePage() {
-  const sourceNodes = architectureNodes.filter((node) => node.layer === "source");
-  const externalNodes = architectureNodes.filter((node) => ["delivery", "observability", "control"].includes(node.layer));
+  const architecture = usePlatformArchitecture();
+
+  if (architecture.isLoading || !architecture.data) {
+    return <div className="loadingState"><Spinner label="Loading platform architecture" /></div>;
+  }
+
+  const data = architecture.data;
+  const nodeById = new Map(data.nodes.map((node) => [node.id, node]));
+  const sourceNodes = data.nodes.filter((node) => node.layer === "source");
+  const supportingNodes = data.nodes.filter((node) => ["delivery", "observability", "control"].includes(node.layer));
 
   return (
     <>
@@ -87,20 +102,22 @@ export function ArchitecturePage() {
             Gold and feature tables remain available outside the VM.
           </Text>
         </div>
-        <Badge color="success">Gold survives VM shutdown</Badge>
+        <Badge color={data.goldSurvivesVmShutdown ? "success" : "warning"}>
+          {data.goldSurvivesVmShutdown ? "Gold survives VM shutdown" : "Durability not guaranteed"}
+        </Badge>
       </section>
 
       <section className="sectionGap">
         <div className="sectionHeader">
           <div>
-            <Title3>Canonical end-to-end flow</Title3>
-            <Text className="muted">The generator is optional, and ML is a branch after features. Gold can be served without Kaggle or Neon.</Text>
+            <Title3>Canonical data flows</Title3>
+            <Text className="muted">Gold is complete without ML; Kaggle and Neon are optional enrichment / serving branches.</Text>
           </div>
         </div>
 
         <div className="architectureLanes" aria-label="Canonical data platform flows">
-          <FlowLane ids={engineeringFlow} label="Core data engineering → Gold" />
-          <FlowLane ids={mlEnrichmentFlow} label="Optional ML enrichment → Gold history / compact serving state" />
+          <FlowLane ids={data.engineeringFlow} label="Core data engineering → Gold" nodes={nodeById} />
+          <FlowLane ids={data.mlEnrichmentFlow} label="Optional ML enrichment → Gold history / compact serving state" nodes={nodeById} />
         </div>
       </section>
 
@@ -108,11 +125,15 @@ export function ArchitecturePage() {
         <div className="sectionHeader">
           <div>
             <Title3>Durable data zones</Title3>
-            <Text className="muted">Business React applications are out of scope; ReactOracle publishes and exposes Gold tables instead.</Text>
+            <Text className="muted">
+              {data.businessReactInScope
+                ? "Application-specific consumers may be attached."
+                : "Business React applications are out of scope; ReactOracle publishes and exposes Gold tables instead."}
+            </Text>
           </div>
         </div>
         <div className="durableZoneGrid">
-          {durableDataZones.map((zone) => (
+          {data.durableZones.map((zone) => (
             <Card key={zone.name} className="durableZoneCard">
               <div className="cardTop">
                 <Title3>{zone.name}</Title3>
@@ -134,7 +155,7 @@ export function ArchitecturePage() {
             <div><Badge color="warning">Temporary</Badge><Text>Grafana, Prometheus, Loki and local K3s services</Text></div>
             <div><Badge color="success">Preserved</Badge><Text>MotherDuck / DuckLake Raw, Bronze, Silver, Gold and Features</Text></div>
             <div><Badge color="success">Preserved</Badge><Text>GitHub source / CI artifacts and external provider state</Text></div>
-            <div><Badge color="success">Preserved</Badge><Text>Neon serving / ML metadata</Text></div>
+            <div><Badge color="success">Preserved</Badge><Text>Optional Neon serving / ML metadata</Text></div>
           </div>
         </Card>
 
@@ -143,7 +164,7 @@ export function ArchitecturePage() {
           <div className="architectureList">
             <div><Badge color="success">Primary</Badge><Text>Gold tables in MotherDuck / DuckLake</Text></div>
             <div><Badge color="informative">Optional</Badge><Text>Neon for low-volume serving tables, ML metrics and latest predictions</Text></div>
-            <div><Badge color="informative">Consumers</Badge><Text>Power BI, SQL clients, notebooks and APIs</Text></div>
+            <div><Badge color="informative">Consumers</Badge><Text>Power BI, SQL clients, notebooks and read-only APIs</Text></div>
             <div><Badge color="subtle">Out of scope</Badge><Text>Business React dashboards and application-specific frontends</Text></div>
           </div>
         </Card>
@@ -157,7 +178,7 @@ export function ArchitecturePage() {
           </div>
         </div>
         <div className="architectureCardGrid">
-          {[...sourceNodes, ...externalNodes].map((node) => <ArchitectureCard key={node.id} node={node} />)}
+          {[...sourceNodes, ...supportingNodes].map((node) => <ArchitectureCard key={node.id} node={node} />)}
         </div>
       </section>
     </>
