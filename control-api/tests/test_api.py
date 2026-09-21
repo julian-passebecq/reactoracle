@@ -25,10 +25,16 @@ def test_health() -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_overview_requires_live_snapshot() -> None:
-    response = client.get("/api/v1/overview")
-    assert response.status_code == 503
-    assert response.json()["detail"] == "No live Oracle agent snapshot has been received yet."
+def test_live_read_endpoints_require_agent_snapshot() -> None:
+    for path in (
+        "/api/v1/overview",
+        "/api/v1/k8s/workloads",
+        "/api/v1/infrastructure",
+        "/api/v1/maintenance",
+    ):
+        response = client.get(path)
+        assert response.status_code == 503
+        assert response.json()["detail"] == "No live Oracle agent snapshot has been received yet."
 
 
 def test_agent_ingress_requires_configured_token(monkeypatch) -> None:
