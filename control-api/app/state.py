@@ -5,20 +5,24 @@ from datetime import datetime, timezone
 from threading import RLock
 from uuid import uuid4
 
-from .mock_data import build_mock_overview
+from .mock_data import build_live_overview_template
 from .models import AgentCommand, AgentCommandResult, AgentHeartbeat, AgentSnapshot, AgentStatus, CommandName, CommandRun, Overview, ServiceSummary
 
 
 class ControlPlaneStore:
     def __init__(self) -> None:
         self._lock = RLock()
-        self._overview = build_mock_overview()
-        self._heartbeat: AgentHeartbeat | None = None
-        self._snapshot_at: datetime | None = None
-        self._commands: dict[str, CommandRun] = {}
-        self._command_order: list[str] = []
+        self.reset()
 
-    def get_overview(self) -> Overview:
+    def reset(self) -> None:
+        with self._lock:
+            self._overview: Overview | None = None
+            self._heartbeat: AgentHeartbeat | None = None
+            self._snapshot_at: datetime | None = None
+            self._commands: dict[str, CommandRun] = {}
+            self._command_order: list[str] = []
+
+    def get_overview(self) -> Overview | None:
         with self._lock:
             return deepcopy(self._overview)
 
@@ -28,7 +32,7 @@ class ControlPlaneStore:
 
     def record_snapshot(self, snapshot: AgentSnapshot) -> None:
         with self._lock:
-            overview = deepcopy(self._overview)
+            overview = deepcopy(self._overview) if self._overview is not None else build_live_overview_template()
             host = snapshot.host
             overview.vm.id = host.id
             overview.vm.name = host.name
