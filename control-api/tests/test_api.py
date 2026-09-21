@@ -274,6 +274,7 @@ def test_k8s_log_command_caps_tail() -> None:
 
 def test_k8s_restart_command_round_trip(monkeypatch) -> None:
     monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+    monkeypatch.setenv("REACTORACLE_ENABLE_MUTATIONS", "true")
 
     created = client.post(
         "/api/v1/commands",
@@ -335,3 +336,31 @@ def test_k8s_restart_rejects_jobs_and_extra_arguments() -> None:
         },
     )
     assert extra_response.status_code == 422
+
+
+def test_restart_capability_disabled_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("REACTORACLE_ENABLE_MUTATIONS", raising=False)
+    response = client.get("/api/v1/capabilities")
+    assert response.status_code == 200
+    assert response.json()["restartWorkload"] is False
+
+    denied = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.restart_workload",
+            "machineId": "oracle-restart-test",
+            "arguments": {
+                "namespace": "airflow",
+                "name": "airflow-scheduler",
+                "kind": "Deployment",
+            },
+        },
+    )
+    assert denied.status_code == 403
+
+
+def test_restart_capability_enabled_explicitly(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_ENABLE_MUTATIONS", "true")
+    response = client.get("/api/v1/capabilities")
+    assert response.status_code == 200
+    assert response.json()["restartWorkload"] is True
