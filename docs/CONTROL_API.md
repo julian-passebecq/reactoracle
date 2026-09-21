@@ -165,3 +165,23 @@ The architecture response includes:
 The core flow intentionally does **not** depend on Kaggle or Neon. Kaggle is an optional branch from feature data and its historical analytical outputs return to the lakehouse. Neon can mirror compact latest-state / metadata tables when needed.
 
 The Gold catalog describes stable serving contracts such as `gold.sales_daily`, `gold.customer_360`, and `gold.delivery_performance`. Each entry includes grain, purpose, consumers, storage target, ML-derived flag and lifecycle status.
+
+
+## Provider inventory
+
+```text
+GET /api/v1/platform/providers
+```
+
+This endpoint describes the external provider ecosystem without claiming mutable free-tier quotas that have not been verified.
+
+Each provider includes:
+
+- category and role;
+- lifecycle state;
+- cost intent;
+- telemetry connection state;
+- whether current limits have been verified;
+- a short integration note.
+
+`usageBarsRequireVerifiedLimits=true` is a contract invariant. The frontend must not display quota-used percentages until an adapter supplies live usage and a verified current limit.
