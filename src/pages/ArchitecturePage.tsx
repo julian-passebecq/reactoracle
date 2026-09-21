@@ -4,7 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import type { ArchitectureState, PlatformNode } from "../domain/types";
 
 const stateAppearance: Record<ArchitectureState, { color: "success" | "informative" | "warning" | "subtle"; label: string }> = {
-  live: { color: "success", label: "Live" },
+  live: { color: "success", label: "Implemented" },
   external: { color: "informative", label: "External" },
   planned: { color: "warning", label: "Planned" },
   optional: { color: "subtle", label: "Optional" },
