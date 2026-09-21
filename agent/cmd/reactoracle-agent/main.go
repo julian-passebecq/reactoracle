@@ -47,7 +47,6 @@ type CommandResult struct {
 	Error  string         `json:"error,omitempty"`
 }
 
-
 type Snapshot struct {
 	MachineID   string             `json:"machineId"`
 	CollectedAt time.Time          `json:"collectedAt"`
@@ -129,7 +128,7 @@ type kubeList struct {
 }
 
 type kubeItem struct {
-	Kind string `json:"kind"`
+	Kind     string `json:"kind"`
 	Metadata struct {
 		Name      string `json:"name"`
 		Namespace string `json:"namespace"`
@@ -210,10 +209,10 @@ func runOnce(client *http.Client, cfg Config) {
 	}
 	heartbeat := Heartbeat{
 		AgentVersion: agentVersion,
-		MachineID: host.ID,
-		Status: agentStatus,
+		MachineID:    host.ID,
+		Status:       agentStatus,
 		K3sReachable: k3sReachable,
-		SentAt: time.Now().UTC(),
+		SentAt:       time.Now().UTC(),
 	}
 	if err := postJSON(ctx, client, cfg, "/api/v1/agent/heartbeat", heartbeat); err != nil {
 		fmt.Fprintln(os.Stderr, "heartbeat:", err)
@@ -221,11 +220,11 @@ func runOnce(client *http.Client, cfg Config) {
 	}
 
 	snapshot := Snapshot{
-		MachineID: host.ID,
+		MachineID:   host.ID,
 		CollectedAt: time.Now().UTC(),
-		Host: host,
-		Workloads: workloads,
-		Namespaces: namespaces,
+		Host:        host,
+		Workloads:   workloads,
+		Namespaces:  namespaces,
 		Maintenance: maintenance,
 	}
 	if err := postJSON(ctx, client, cfg, "/api/v1/agent/snapshot", snapshot); err != nil {
@@ -504,10 +503,18 @@ func collectHost(ctx context.Context) (HostSnapshot, error) {
 	ocpu := float64(runtime.NumCPU())
 	memoryGB := 0.0
 	if metadata, err := readOCIMetadata(ctx); err == nil {
-		if metadata.DisplayName != "" { hostname = metadata.DisplayName }
-		if metadata.Shape != "" { shape = metadata.Shape }
-		if metadata.ShapeConfig.OCPUs > 0 { ocpu = metadata.ShapeConfig.OCPUs }
-		if metadata.ShapeConfig.MemoryInGBs > 0 { memoryGB = metadata.ShapeConfig.MemoryInGBs }
+		if metadata.DisplayName != "" {
+			hostname = metadata.DisplayName
+		}
+		if metadata.Shape != "" {
+			shape = metadata.Shape
+		}
+		if metadata.ShapeConfig.OCPUs > 0 {
+			ocpu = metadata.ShapeConfig.OCPUs
+		}
+		if metadata.ShapeConfig.MemoryInGBs > 0 {
+			memoryGB = metadata.ShapeConfig.MemoryInGBs
+		}
 	}
 
 	totalKB, availableKB := readMemInfo()
@@ -526,14 +533,16 @@ func collectHost(ctx context.Context) (HostSnapshot, error) {
 	load1 := readLoad1()
 	uptime := readUptime()
 	k3sVersion := commandFirstLine(ctx, "k3s", "--version")
-	if k3sVersion == "" { k3sVersion = "unknown" }
+	if k3sVersion == "" {
+		k3sVersion = "unknown"
+	}
 
 	return HostSnapshot{
-		ID: hostname,
-		Name: hostname,
-		Shape: shape,
-		OCPU: round1(ocpu),
-		MemoryGB: round1(memoryGB),
+		ID:            hostname,
+		Name:          hostname,
+		Shape:         shape,
+		OCPU:          round1(ocpu),
+		MemoryGB:      round1(memoryGB),
 		CPUPercent:    round1(cpuPercent),
 		MemoryUsedGB:  round1(memoryUsedGB),
 		SwapUsedGB:    round1(swapUsedGB),
@@ -550,11 +559,15 @@ func collectHost(ctx context.Context) (HostSnapshot, error) {
 
 func readOCIMetadata(ctx context.Context) (OCIInstanceMetadata, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://169.254.169.254/opc/v2/instance/", nil)
-	if err != nil { return OCIInstanceMetadata{}, err }
+	if err != nil {
+		return OCIInstanceMetadata{}, err
+	}
 	req.Header.Set("Authorization", "Bearer Oracle")
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Do(req)
-	if err != nil { return OCIInstanceMetadata{}, err }
+	if err != nil {
+		return OCIInstanceMetadata{}, err
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return OCIInstanceMetadata{}, fmt.Errorf("OCI metadata status %s", resp.Status)
@@ -568,24 +581,35 @@ func readOCIMetadata(ctx context.Context) (OCIInstanceMetadata, error) {
 
 func readMemInfo() (totalKB, availableKB uint64) {
 	data, err := os.ReadFile("/proc/meminfo")
-	if err != nil { return 0, 0 }
+	if err != nil {
+		return 0, 0
+	}
 	for _, line := range strings.Split(string(data), "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 2 { continue }
+		if len(fields) < 2 {
+			continue
+		}
 		value, _ := strconv.ParseUint(fields[1], 10, 64)
 		switch strings.TrimSuffix(fields[0], ":") {
-		case "MemTotal": totalKB = value
-		case "MemAvailable": availableKB = value
+		case "MemTotal":
+			totalKB = value
+		case "MemAvailable":
+			availableKB = value
 		}
 	}
 	return totalKB, availableKB
 }
 
-type cpuTimes struct { idle uint64; total uint64 }
+type cpuTimes struct {
+	idle  uint64
+	total uint64
+}
 
 func readCPUTimes() (cpuTimes, error) {
 	data, err := os.ReadFile("/proc/stat")
-	if err != nil { return cpuTimes{}, err }
+	if err != nil {
+		return cpuTimes{}, err
+	}
 	line := strings.SplitN(string(data), "\n", 2)[0]
 	fields := strings.Fields(line)
 	if len(fields) < 5 || fields[0] != "cpu" {
@@ -594,24 +618,36 @@ func readCPUTimes() (cpuTimes, error) {
 	values := make([]uint64, 0, len(fields)-1)
 	for _, field := range fields[1:] {
 		value, err := strconv.ParseUint(field, 10, 64)
-		if err != nil { return cpuTimes{}, err }
+		if err != nil {
+			return cpuTimes{}, err
+		}
 		values = append(values, value)
 	}
 	var total uint64
-	for _, value := range values { total += value }
+	for _, value := range values {
+		total += value
+	}
 	idle := values[3]
-	if len(values) > 4 { idle += values[4] }
+	if len(values) > 4 {
+		idle += values[4]
+	}
 	return cpuTimes{idle: idle, total: total}, nil
 }
 
 func sampleCPU(wait time.Duration) (float64, error) {
 	first, err := readCPUTimes()
-	if err != nil { return 0, err }
+	if err != nil {
+		return 0, err
+	}
 	time.Sleep(wait)
 	second, err := readCPUTimes()
-	if err != nil { return 0, err }
+	if err != nil {
+		return 0, err
+	}
 	totalDelta := second.total - first.total
-	if totalDelta == 0 { return 0, nil }
+	if totalDelta == 0 {
+		return 0, nil
+	}
 	idleDelta := second.idle - first.idle
 	return (1 - float64(idleDelta)/float64(totalDelta)) * 100, nil
 }
@@ -722,16 +758,24 @@ func sampleNetwork(wait time.Duration) (rxMbps, txMbps float64, err error) {
 
 func readUptime() string {
 	data, err := os.ReadFile("/proc/uptime")
-	if err != nil { return "unknown" }
+	if err != nil {
+		return "unknown"
+	}
 	fields := strings.Fields(string(data))
-	if len(fields) == 0 { return "unknown" }
+	if len(fields) == 0 {
+		return "unknown"
+	}
 	secondsFloat, err := strconv.ParseFloat(fields[0], 64)
-	if err != nil { return "unknown" }
+	if err != nil {
+		return "unknown"
+	}
 	seconds := int64(secondsFloat)
 	days := seconds / 86400
 	hours := (seconds % 86400) / 3600
 	minutes := (seconds % 3600) / 60
-	if days > 0 { return fmt.Sprintf("%dd %02dh", days, hours) }
+	if days > 0 {
+		return fmt.Sprintf("%dd %02dh", days, hours)
+	}
 	return fmt.Sprintf("%dh %02dm", hours, minutes)
 }
 
@@ -755,17 +799,21 @@ func collectKubernetes(ctx context.Context) ([]Workload, []NamespaceSummary, boo
 
 func readWorkloads(ctx context.Context) ([]Workload, error) {
 	data, err := kubectlJSON(ctx, "get", "deployments,statefulsets,daemonsets,jobs", "-A", "-o", "json")
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	var list kubeList
-	if err := json.Unmarshal(data, &list); err != nil { return nil, err }
+	if err := json.Unmarshal(data, &list); err != nil {
+		return nil, err
+	}
 	result := make([]Workload, 0, len(list.Items))
 	for _, item := range list.Items {
 		result = append(result, Workload{
-			ID: item.Metadata.Namespace + "/" + item.Metadata.Name,
-			Name: item.Metadata.Name,
+			ID:        item.Metadata.Namespace + "/" + item.Metadata.Name,
+			Name:      item.Metadata.Name,
 			Namespace: item.Metadata.Namespace,
-			Kind: item.Kind,
-			Status: workloadStatus(item),
+			Kind:      item.Kind,
+			Status:    workloadStatus(item),
 		})
 	}
 	return result, nil
@@ -774,8 +822,12 @@ func readWorkloads(ctx context.Context) ([]Workload, error) {
 func workloadStatus(item kubeItem) string {
 	switch item.Kind {
 	case "Job":
-		if number(item.Status["succeeded"]) > 0 { return "Complete" }
-		if number(item.Status["failed"]) > 0 { return "Failed" }
+		if number(item.Status["succeeded"]) > 0 {
+			return "Complete"
+		}
+		if number(item.Status["failed"]) > 0 {
+			return "Failed"
+		}
 		return "Running"
 	default:
 		desired := number(item.Status["replicas"])
@@ -784,7 +836,9 @@ func workloadStatus(item kubeItem) string {
 			desired = number(item.Status["desiredNumberScheduled"])
 			ready = number(item.Status["numberReady"])
 		}
-		if desired > 0 && ready >= desired { return "Running" }
+		if desired > 0 && ready >= desired {
+			return "Running"
+		}
 		return "Pending"
 	}
 }
@@ -816,12 +870,18 @@ func readNamespaces(ctx context.Context) ([]NamespaceSummary, error) {
 		entry.PodsTotal++
 		ready := len(pod.Status.ContainerStatuses) > 0
 		for _, container := range pod.Status.ContainerStatuses {
-			if !container.Ready { ready = false }
+			if !container.Ready {
+				ready = false
+			}
 		}
-		if ready && pod.Status.Phase == "Running" { entry.PodsReady++ }
+		if ready && pod.Status.Phase == "Running" {
+			entry.PodsReady++
+		}
 	}
 	result := make([]NamespaceSummary, 0, len(byNamespace))
-	for _, value := range byNamespace { result = append(result, *value) }
+	for _, value := range byNamespace {
+		result = append(result, *value)
+	}
 	return result, nil
 }
 
@@ -850,10 +910,10 @@ func readPodMetrics(ctx context.Context) ([]podMetric, error) {
 			continue
 		}
 		result = append(result, podMetric{
-			Namespace: fields[0],
-			Name: fields[1],
+			Namespace:     fields[0],
+			Name:          fields[1],
 			CPUMillicores: cpu,
-			MemoryMB: memory,
+			MemoryMB:      memory,
 		})
 	}
 	return result, nil
@@ -1073,7 +1133,9 @@ func parseHumanBytes(raw string) (float64, error) {
 
 func readOSPrettyName() string {
 	data, err := os.ReadFile("/etc/os-release")
-	if err != nil { return "Linux" }
+	if err != nil {
+		return "Linux"
+	}
 	for _, line := range strings.Split(string(data), "\n") {
 		if strings.HasPrefix(line, "PRETTY_NAME=") {
 			return strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), "\"")
@@ -1084,18 +1146,23 @@ func readOSPrettyName() string {
 
 func commandFirstLine(ctx context.Context, name string, args ...string) string {
 	output, err := exec.CommandContext(ctx, name, args...).Output()
-	if err != nil { return "" }
+	if err != nil {
+		return ""
+	}
 	return strings.TrimSpace(strings.SplitN(strings.TrimSpace(string(output)), "\n", 2)[0])
 }
 
 func number(value any) float64 {
 	switch typed := value.(type) {
-	case float64: return typed
-	case int: return float64(typed)
+	case float64:
+		return typed
+	case int:
+		return float64(typed)
 	case json.Number:
 		value, _ := typed.Float64()
 		return value
-	default: return 0
+	default:
+		return 0
 	}
 }
 
