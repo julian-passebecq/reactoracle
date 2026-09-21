@@ -188,3 +188,42 @@ class AgentCommandResult(BaseModel):
 
 class Capabilities(BaseModel):
     restartWorkload: bool = False
+
+
+ArchitectureState = Literal["live", "external", "planned", "optional"]
+
+
+class PlatformNode(BaseModel):
+    id: str
+    name: str
+    layer: Literal["source", "delivery", "lakehouse", "orchestration", "compute", "ml", "serving", "consumption", "observability", "control"]
+    state: ArchitectureState
+    provider: str
+    role: str
+    durable: bool
+    location: str
+
+
+class DurableDataZone(BaseModel):
+    name: str
+    owner: str
+    purpose: str
+
+
+class PlatformArchitecture(BaseModel):
+    nodes: list[PlatformNode]
+    engineeringFlow: list[str]
+    mlEnrichmentFlow: list[str]
+    durableZones: list[DurableDataZone]
+    goldSurvivesVmShutdown: bool = True
+    businessReactInScope: bool = False
+
+
+class GoldTableContract(BaseModel):
+    name: str
+    grain: str
+    purpose: str
+    consumers: list[str]
+    storage: str
+    mlDerived: bool = False
+    status: Literal["planned", "available"] = "planned"
