@@ -434,7 +434,15 @@ func readNamespaces(ctx context.Context) ([]NamespaceSummary, error) {
 	return result, nil
 }
 
-func kubectlJSON(ctx context.Context, args ...string) ([]byte, error) {\n\tif output, err := exec.CommandContext(ctx, "kubectl", args...).Output(); err == nil {\n\t\treturn output, nil\n\t}\n\tk3sArgs := append([]string{"kubectl"}, args...)\n\treturn exec.CommandContext(ctx, "k3s", k3sArgs...).Output()\n}\n\nfunc collectMaintenance() MaintenanceSummary {
+func kubectlJSON(ctx context.Context, args ...string) ([]byte, error) {
+	if output, err := exec.CommandContext(ctx, "kubectl", args...).Output(); err == nil {
+		return output, nil
+	}
+	k3sArgs := append([]string{"kubectl"}, args...)
+	return exec.CommandContext(ctx, "k3s", k3sArgs...).Output()
+}
+
+func collectMaintenance() MaintenanceSummary {
 	return MaintenanceSummary{
 		OS: readOSPrettyName(),
 		Kernel: commandFirstLine(context.Background(), "uname", "-r"),
