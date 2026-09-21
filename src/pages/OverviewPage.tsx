@@ -31,7 +31,7 @@ export function OverviewPage() {
       <MetricCard label="Network" value={vm.networkRxMbps + " ↓ / " + vm.networkTxMbps + " ↑"} detail="Mbps RX / TX" />
       <MetricCard label="Load" value={String(vm.load1)} detail={"1-minute load · " + vm.ocpu + " OCPU"} />
       <MetricCard label="Swap" value={vm.swapUsedGb + " GB"} detail="Used swap" />
-      <MetricCard label="Projected OCI bill" value={vm.projectedCost} detail="Free-tier guardrail" />
+      <MetricCard label="OCI billing" value={vm.projectedCost} detail="Usage/billing adapter not connected" />
       <MetricCard label="Oracle agent" value={agentLabel} detail={agentDetail} />
     </section>
     {issues.length > 0 ? <div className="healthNotice"><Text weight="semibold">Attention</Text><Text>{issues.join(" · ")}</Text></div> : null}
