@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .models import DurableDataZone, GoldTableContract, PlatformArchitecture, PlatformNode
+from .models import DurableDataZone, GoldTableContract, PlatformArchitecture, PlatformNode, ProviderInventory, ProviderInventoryItem
 
 
 def build_platform_architecture() -> PlatformArchitecture:
@@ -180,3 +180,134 @@ def build_gold_catalog() -> list[GoldTableContract]:
             mlDerived=True,
         ),
     ]
+
+
+
+def build_provider_inventory() -> ProviderInventory:
+    # Cost intent describes the lab target, not a verified provider entitlement.
+    # Exact free-tier limits are intentionally omitted until a provider adapter verifies them.
+    return ProviderInventory(
+        providers=[
+            ProviderInventoryItem(
+                id="oracle",
+                name="Oracle Cloud",
+                category="compute",
+                state="live",
+                role="ARM64 VM running K3s, Airflow, Spark and observability",
+                costIntent="free-tier",
+                telemetry="partial",
+                limitsVerified=False,
+                detail="Host telemetry is live through the agent; billing/free-tier quota API is not connected.",
+            ),
+            ProviderInventoryItem(
+                id="github",
+                name="GitHub",
+                category="code",
+                state="external",
+                role="Source repositories, DAGs, manifests, CI/CD and release artifacts",
+                costIntent="free-tier",
+                telemetry="partial",
+                limitsVerified=False,
+                detail="Workflow state is available; account-level quota telemetry is not connected.",
+            ),
+            ProviderInventoryItem(
+                id="cloudflare",
+                name="Cloudflare",
+                category="edge",
+                state="external",
+                role="DNS, access perimeter and potential ReactOracle frontend hosting",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Portal/link integration only until an explicit usage adapter is added.",
+            ),
+            ProviderInventoryItem(
+                id="fastapi-cloud",
+                name="FastAPI Cloud",
+                category="api",
+                state="external",
+                role="External ReactOracle Control API hosting target",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Control-plane hosting is external to the Oracle VM.",
+            ),
+            ProviderInventoryItem(
+                id="motherduck",
+                name="MotherDuck / DuckLake",
+                category="lakehouse",
+                state="planned",
+                role="Durable Raw, Bronze, Silver, Gold, Features and ML history",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Canonical durable analytical plane; provider adapter is a later slice.",
+            ),
+            ProviderInventoryItem(
+                id="kafka",
+                name="Managed Kafka",
+                category="streaming",
+                state="planned",
+                role="External streaming source without JVM pressure on Oracle",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Provider remains configurable; do not hard-code a vendor or mutable quota.",
+            ),
+            ProviderInventoryItem(
+                id="kaggle",
+                name="Kaggle",
+                category="ml",
+                state="planned",
+                role="Optional MLJAR / ML execution from governed feature datasets",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Execution/result adapter is planned; ML is not required for serving Gold.",
+            ),
+            ProviderInventoryItem(
+                id="neon",
+                name="Neon",
+                category="database",
+                state="optional",
+                role="Compact serving state, ML metadata and PostgreSQL exercises",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Not the canonical Gold store.",
+            ),
+            ProviderInventoryItem(
+                id="colab",
+                name="Google Colab",
+                category="lab",
+                state="optional",
+                role="Disposable interactive Python / ML notebook lab",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Never a core Spark cluster or persistent runtime dependency.",
+            ),
+            ProviderInventoryItem(
+                id="huggingface",
+                name="Hugging Face",
+                category="artifacts",
+                state="optional",
+                role="Potential model/dataset artifact publication",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Optional artifact ecosystem, not core compute.",
+            ),
+            ProviderInventoryItem(
+                id="gitlab",
+                name="GitLab",
+                category="cicd",
+                state="optional",
+                role="Optional secondary CI/CD lab",
+                costIntent="free-tier",
+                telemetry="not-connected",
+                limitsVerified=False,
+                detail="Not required while GitHub Actions remains the active delivery path.",
+            ),
+        ]
+    )
