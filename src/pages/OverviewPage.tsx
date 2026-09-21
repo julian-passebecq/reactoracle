@@ -1,6 +1,8 @@
 import { Button, Card, CardHeader, Divider, ProgressBar, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useAgentStatus, useOverview } from "../api/queries";
+import { Link } from "react-router-dom";
 import { DataError } from "../components/DataError";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { HealthCheckControl } from "../components/HealthCheckControl";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
@@ -41,11 +43,11 @@ export function OverviewPage() {
         <div className="capacityBlock"><div className="capacityLabel"><span>Memory</span><span>{vm.memoryUsedGb} / {vm.memoryGb} GB</span></div><ProgressBar value={vm.memoryUsedGb / vm.memoryGb} /></div>
         <div className="capacityBlock"><div className="capacityLabel"><span>CPU</span><span>{vm.cpuPercent}%</span></div><ProgressBar value={vm.cpuPercent / 100} /></div>
         <div className="capacityBlock"><div className="capacityLabel"><span>Disk</span><span>{vm.diskPercent}%</span></div><ProgressBar value={vm.diskPercent / 100} /></div>
-        <Divider /><div className="quickActions"><Button appearance="primary">Open monitoring</Button><Button>View logs</Button><HealthCheckControl machineId={vm.id} /></div>
+        <Divider /><div className="quickActions"><Link to="/monitoring"><Button appearance="primary">Open monitoring</Button></Link><Link to="/logs"><Button>View logs</Button></Link><HealthCheckControl machineId={vm.id} /></div>
       </Card>
     </section>
     <section>
-      <div className="sectionHeader"><div><Title3>Kubernetes workloads</Title3><Text className="muted">Daily workload view. Headlamp remains the advanced Kubernetes console.</Text></div><Button>Open Headlamp</Button></div>
+      <div className="sectionHeader"><div><Title3>Kubernetes workloads</Title3><Text className="muted">Daily workload view. Headlamp remains the advanced Kubernetes console.</Text></div><ExternalLinkButton href={runtimeConfig.headlampUrl}>Open Headlamp</ExternalLinkButton></div>
       <WorkloadTable workloads={data.workloads} />
     </section>
   </>;
