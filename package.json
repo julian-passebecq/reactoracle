@@ -25,6 +25,7 @@
   },
   "overrides": {
     "@fluentui/react-jsx-runtime": "9.4.5",
-    "@fluentui/react-tabster": "9.26.17"
+    "@fluentui/react-tabster": "9.26.17",
+    "@fluentui/react-badge": "9.5.4"
   }
 }
