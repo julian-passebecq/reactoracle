@@ -35,7 +35,7 @@ def build_mock_overview() -> Overview:
             memoryUsedGb=5.9,
             diskPercent=31,
             uptime="16d 04h",
-            projectedCost="$0",
+            projectedCost="Not connected",
             k3sVersion="v1.34",
             swapUsedGb=0,
             load1=0.42,
