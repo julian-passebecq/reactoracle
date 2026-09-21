@@ -6,6 +6,7 @@ import { runtimeConfig } from "../config";
 
 const nav = [
   { to: "/", label: "Overview", icon: <Pulse24Regular />, end: true },
+  { to: "/topology", label: "Topology", icon: <Cloud24Regular /> },
   { to: "/infrastructure", label: "Infrastructure", icon: <Cloud24Regular /> },
   { to: "/kubernetes", label: "Kubernetes", icon: <Apps24Regular /> },
   { to: "/data-platform", label: "Data Platform", icon: <DataUsage24Regular /> },
