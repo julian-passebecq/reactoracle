@@ -1,7 +1,8 @@
-import type { AgentStatus, Capabilities, CommandRun, GoldTableContract, InfrastructureSummary, LogQueryInput, MaintenanceSummary, Overview, PlatformArchitecture, RestartWorkloadInput, Workload } from "../domain/types";
+import type { AgentStatus, Capabilities, CommandRun, GoldTableContract, InfrastructureSummary, LogQueryInput, MaintenanceSummary, Overview, PlatformArchitecture, ProviderInventory, RestartWorkloadInput, Workload } from "../domain/types";
 import { overviewMock } from "../data/mock";
 import { platformArchitectureMock } from "../data/architecture";
 import { goldTableCatalog } from "../data/goldCatalog";
+import { providerInventoryMock } from "../data/providers";
 import { runtimeConfig } from "../config";
 
 const delay = (ms = 160) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -15,6 +16,7 @@ export interface ControlPlaneClient {
   getCapabilities(): Promise<Capabilities>;
   getPlatformArchitecture(): Promise<PlatformArchitecture>;
   getGoldCatalog(): Promise<GoldTableContract[]>;
+  getProviderInventory(): Promise<ProviderInventory>;
   runHealthCheck(machineId: string): Promise<CommandRun>;
   runLogQuery(input: LogQueryInput): Promise<CommandRun>;
   restartWorkload(input: RestartWorkloadInput): Promise<CommandRun>;
@@ -32,6 +34,7 @@ class MockControlPlaneClient implements ControlPlaneClient {
   async getCapabilities() { await delay(); return { restartWorkload: true }; }
   async getPlatformArchitecture() { await delay(); return platformArchitectureMock; }
   async getGoldCatalog() { await delay(); return goldTableCatalog; }
+  async getProviderInventory() { await delay(); return providerInventoryMock; }
 
   async runHealthCheck(machineId: string) {
     await delay(120);
@@ -186,6 +189,7 @@ class HttpControlPlaneClient implements ControlPlaneClient {
   getCapabilities() { return this.get<Capabilities>("/api/v1/capabilities"); }
   getPlatformArchitecture() { return this.get<PlatformArchitecture>("/api/v1/platform/architecture"); }
   getGoldCatalog() { return this.get<GoldTableContract[]>("/api/v1/platform/gold-catalog"); }
+  getProviderInventory() { return this.get<ProviderInventory>("/api/v1/platform/providers"); }
   runHealthCheck(machineId: string) {
     return this.request<CommandRun>("/api/v1/commands", {
       method: "POST",
