@@ -604,7 +604,7 @@ def test_gold_contract_validation_rejects_bad_names_and_duplicate_consumers() ->
         )
 
 
-def test_provider_inventory_rejects_duplicate_ids_and_unverified_live_quota() -> None:
+def test_provider_inventory_rejects_duplicate_ids_and_unverified_quota_policy() -> None:
     provider = ProviderInventoryItem(
         id="same",
         name="Same",
@@ -621,18 +621,6 @@ def test_provider_inventory_rejects_duplicate_ids_and_unverified_live_quota() ->
 
     with pytest.raises(ValidationError):
         ProviderInventory(
-            providers=[
-                ProviderInventoryItem(
-                    id="quota",
-                    name="Quota",
-                    category="compute",
-                    state="external",
-                    role="test",
-                    costIntent="unknown",
-                    telemetry="live",
-                    limitsVerified=False,
-                    detail="test",
-                )
-            ],
-            usageBarsRequireVerifiedLimits=True,
+            providers=[provider],
+            usageBarsRequireVerifiedLimits=False,
         )
