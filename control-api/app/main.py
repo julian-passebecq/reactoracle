@@ -120,7 +120,6 @@ def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> 
     return {"namespace": namespace, "name": name, "kind": kind, "tail": tail}
 
 
-@app.post("/api/v1/commands", response_model=CommandRun, status_code=status.HTTP_202_ACCEPTED)
 def _validated_restart_arguments(arguments: dict[str, str | int | float | bool]) -> dict[str, str]:
     namespace = arguments.get("namespace")
     name = arguments.get("name")
@@ -138,6 +137,7 @@ def _validated_restart_arguments(arguments: dict[str, str | int | float | bool])
     return {"namespace": namespace, "name": name, "kind": kind}
 
 
+@app.post("/api/v1/commands", response_model=CommandRun, status_code=status.HTTP_202_ACCEPTED)
 def create_command(request: CommandRequest) -> CommandRun:
     if request.command == "vm.health_check":
         if request.arguments:
