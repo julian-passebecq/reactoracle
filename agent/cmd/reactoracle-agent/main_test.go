@@ -272,3 +272,40 @@ func TestApplyPodRestartCountsUsesLongestWorkloadPrefix(t *testing.T) {
 		t.Fatalf("scheduler restarts = %d, want 4", workloads[1].Restarts)
 	}
 }
+
+
+func TestBuildRestartCommand(t *testing.T) {
+	args, metadata, err := buildRestartCommand(map[string]any{
+		"namespace": "airflow",
+		"name":      "airflow-scheduler",
+		"kind":      "Deployment",
+	})
+	if err != nil {
+		t.Fatalf("buildRestartCommand: %v", err)
+	}
+	want := []string{"rollout", "restart", "-n", "airflow", "deployment/airflow-scheduler"}
+	if len(args) != len(want) {
+		t.Fatalf("args = %#v, want %#v", args, want)
+	}
+	for i := range want {
+		if args[i] != want[i] {
+			t.Fatalf("args[%d] = %q, want %q", i, args[i], want[i])
+		}
+	}
+	if metadata["namespace"] != "airflow" || metadata["workload"] != "airflow-scheduler" {
+		t.Fatalf("unexpected metadata: %#v", metadata)
+	}
+}
+
+func TestBuildRestartCommandRejectsUnsafeOrUnsupportedTargets(t *testing.T) {
+	cases := []map[string]any{
+		{"namespace": "airflow;rm", "name": "scheduler", "kind": "Deployment"},
+		{"namespace": "airflow", "name": "scheduler", "kind": "Job"},
+		{"namespace": "airflow", "name": "scheduler", "kind": "Deployment", "image": "bad"},
+	}
+	for _, arguments := range cases {
+		if _, _, err := buildRestartCommand(arguments); err == nil {
+			t.Fatalf("expected validation error for %#v", arguments)
+		}
+	}
+}
