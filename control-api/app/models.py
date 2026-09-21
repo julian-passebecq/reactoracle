@@ -42,22 +42,28 @@ class ServiceSummary(BaseModel):
 
 
 class Workload(BaseModel):
-    id: str
-    name: str
-    namespace: str
+    id: str = Field(min_length=1, max_length=256)
+    name: str = Field(min_length=1, max_length=253)
+    namespace: str = Field(min_length=1, max_length=253)
     kind: Literal["Deployment", "StatefulSet", "DaemonSet", "Job"]
     status: Literal["Running", "Pending", "Failed", "Complete"]
-    cpuMillicores: float = 0
-    memoryMb: float = 0
-    restarts: int = 0
+    cpuMillicores: float = Field(default=0, ge=0)
+    memoryMb: float = Field(default=0, ge=0)
+    restarts: int = Field(default=0, ge=0)
 
 
 class NamespaceSummary(BaseModel):
-    name: str
-    podsReady: int
-    podsTotal: int
-    cpuMillicores: float = 0
-    memoryMb: float = 0
+    name: str = Field(min_length=1, max_length=253)
+    podsReady: int = Field(ge=0)
+    podsTotal: int = Field(ge=0)
+    cpuMillicores: float = Field(default=0, ge=0)
+    memoryMb: float = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def validate_pod_counts(self) -> "NamespaceSummary":
+        if self.podsReady > self.podsTotal:
+            raise ValueError("podsReady cannot exceed podsTotal.")
+        return self
 
 
 class TofuRun(BaseModel):
@@ -84,12 +90,12 @@ class InfrastructureSummary(BaseModel):
 class MaintenanceSummary(BaseModel):
     os: str
     kernel: str
-    updatesAvailable: int
-    securityUpdates: int
+    updatesAvailable: int = Field(ge=0)
+    securityUpdates: int = Field(ge=0)
     rebootRequired: bool
-    unusedImagesGb: float
-    prometheusGb: float
-    lokiGb: float
+    unusedImagesGb: float = Field(ge=0)
+    prometheusGb: float = Field(ge=0)
+    lokiGb: float = Field(ge=0)
     lastBackup: str
     backupStatus: Literal["success", "failed", "unknown"]
 
@@ -113,39 +119,61 @@ class Overview(BaseModel):
 
 
 class AgentHeartbeat(BaseModel):
-    agentVersion: str
-    machineId: str
+    agentVersion: str = Field(min_length=1, max_length=64)
+    machineId: str = Field(min_length=1, max_length=128)
     status: Health
     k3sReachable: bool
     sentAt: datetime
 
 
 class HostSnapshot(BaseModel):
-    id: str
-    name: str
-    shape: str
-    ocpu: float
-    memoryGb: float
-    cpuPercent: float
-    memoryUsedGb: float
-    diskPercent: float
+    id: str = Field(min_length=1, max_length=128)
+    name: str = Field(min_length=1, max_length=255)
+    shape: str = Field(min_length=1, max_length=255)
+    ocpu: float = Field(gt=0)
+    memoryGb: float = Field(gt=0)
+    cpuPercent: float = Field(ge=0, le=100)
+    memoryUsedGb: float = Field(ge=0)
+    diskPercent: float = Field(ge=0, le=100)
     uptime: str
     k3sVersion: str
-    swapUsedGb: float = 0
-    load1: float = 0
-    diskUsedGb: float = 0
-    diskTotalGb: float = 0
-    networkRxMbps: float = 0
-    networkTxMbps: float = 0
+    swapUsedGb: float = Field(default=0, ge=0)
+    load1: float = Field(default=0, ge=0)
+    diskUsedGb: float = Field(default=0, ge=0)
+    diskTotalGb: float = Field(default=0, ge=0)
+    networkRxMbps: float = Field(default=0, ge=0)
+    networkTxMbps: float = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def validate_capacity(self) -> "HostSnapshot":
+        if self.memoryUsedGb > self.memoryGb:
+            raise ValueError("memoryUsedGb cannot exceed memoryGb.")
+        if self.diskTotalGb > 0 and self.diskUsedGb > self.diskTotalGb:
+            raise ValueError("diskUsedGb cannot exceed diskTotalGb.")
+        return self
 
 
 class AgentSnapshot(BaseModel):
-    machineId: str
+    machineId: str = Field(min_length=1, max_length=128)
     collectedAt: datetime
     host: HostSnapshot
     workloads: list[Workload]
     namespaces: list[NamespaceSummary]
     maintenance: MaintenanceSummary
+
+    @model_validator(mode="after")
+    def validate_snapshot_identity(self) -> "AgentSnapshot":
+        if self.machineId != self.host.id:
+            raise ValueError("snapshot machineId must match host.id.")
+
+        workload_ids = [workload.id for workload in self.workloads]
+        if len(workload_ids) != len(set(workload_ids)):
+            raise ValueError("snapshot workload ids must be unique.")
+
+        namespace_names = [namespace.name for namespace in self.namespaces]
+        if len(namespace_names) != len(set(namespace_names)):
+            raise ValueError("snapshot namespace names must be unique.")
+        return self
 
 
 class AgentStatus(BaseModel):
@@ -156,7 +184,7 @@ class AgentStatus(BaseModel):
 
 class CommandRequest(BaseModel):
     command: CommandName
-    machineId: str
+    machineId: str = Field(min_length=1, max_length=128)
     arguments: dict[str, CommandArgument] = Field(default_factory=dict)
 
 
@@ -175,7 +203,7 @@ class CommandRun(BaseModel):
 
 class AgentCommand(BaseModel):
     id: str
-    machineId: str
+    machineId: str = Field(min_length=1, max_length=128)
     command: CommandName
     arguments: dict[str, CommandArgument] = Field(default_factory=dict)
 
@@ -316,18 +344,18 @@ class DataFactoryStage(BaseModel):
 
 
 class ContosoScale(BaseModel):
-    orders: int
-    customers: int
-    products: int
-    stores: int
-    days: int
+    orders: int = Field(gt=0)
+    customers: int = Field(gt=0)
+    products: int = Field(gt=0)
+    stores: int = Field(gt=0)
+    days: int = Field(gt=0)
 
 
 class ContosoMlPlan(BaseModel):
     profile: str
-    positiveOutcomeRate: float
-    signalStrength: float
-    noiseLevel: float
+    positiveOutcomeRate: float = Field(ge=0, le=1)
+    signalStrength: float = Field(ge=0, le=1)
+    noiseLevel: float = Field(ge=0, le=1)
     target: str
     primarySignal: str
     optional: bool = True
@@ -337,6 +365,15 @@ class ContosoOutputPlan(BaseModel):
     format: Literal["Parquet"]
     destination: Literal["MotherDuck / DuckLake"]
     durableZones: list[str]
+
+    @field_validator("durableZones")
+    @classmethod
+    def validate_durable_zones(cls, value: list[str]) -> list[str]:
+        if not value:
+            raise ValueError("At least one durable zone is required.")
+        if len(value) != len(set(value)):
+            raise ValueError("Durable output zones must be unique.")
+        return value
 
 
 class ContosoGenerationPlan(BaseModel):
