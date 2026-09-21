@@ -13,8 +13,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Inspect pinned Fluent dependency map
-        run: npm view @fluentui/react-components@9.66.3 dependencies --json
       - run: npm install
       - run: npm run build
 
