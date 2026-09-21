@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
+import pytest
 
 from app.main import app
+from app.models import DurableDataZone, GoldTableContract, PlatformArchitecture, PlatformNode, ProviderInventory, ProviderInventoryItem
 
 
 client = TestClient(app)
@@ -484,3 +487,152 @@ def test_k8s_logs_rejects_extra_arguments() -> None:
         },
     )
     assert response.status_code == 422
+
+
+def test_platform_architecture_rejects_unknown_flow_nodes() -> None:
+    with pytest.raises(ValidationError):
+        PlatformArchitecture(
+            nodes=[
+                PlatformNode(
+                    id="motherduck",
+                    name="MotherDuck / DuckLake",
+                    layer="lakehouse",
+                    state="planned",
+                    provider="MotherDuck",
+                    role="Durable lakehouse",
+                    durable=True,
+                    location="Managed external",
+                )
+            ],
+            deliveryFlow=[],
+            controlFlow=[],
+            engineeringFlow=["motherduck", "missing-node"],
+            mlEnrichmentFlow=[],
+            durableZones=[
+                DurableDataZone(
+                    name="Gold",
+                    owner="MotherDuck / DuckLake",
+                    purpose="Canonical Gold",
+                )
+            ],
+        )
+
+
+def test_platform_architecture_rejects_duplicate_node_ids() -> None:
+    node = PlatformNode(
+        id="duplicate",
+        name="Duplicate",
+        layer="source",
+        state="planned",
+        provider="test",
+        role="test",
+        durable=False,
+        location="test",
+    )
+    with pytest.raises(ValidationError):
+        PlatformArchitecture(
+            nodes=[node, node],
+            deliveryFlow=[],
+            controlFlow=[],
+            engineeringFlow=[],
+            mlEnrichmentFlow=[],
+            durableZones=[
+                DurableDataZone(
+                    name="Gold",
+                    owner="MotherDuck / DuckLake",
+                    purpose="Canonical Gold",
+                )
+            ],
+        )
+
+
+def test_platform_architecture_enforces_gold_durability_owner() -> None:
+    with pytest.raises(ValidationError):
+        PlatformArchitecture(
+            nodes=[],
+            deliveryFlow=[],
+            controlFlow=[],
+            engineeringFlow=[],
+            mlEnrichmentFlow=[],
+            durableZones=[
+                DurableDataZone(
+                    name="Gold",
+                    owner="Oracle local disk",
+                    purpose="Bad durability boundary",
+                )
+            ],
+            goldSurvivesVmShutdown=True,
+        )
+
+
+def test_platform_architecture_rejects_business_react_scope() -> None:
+    with pytest.raises(ValidationError):
+        PlatformArchitecture(
+            nodes=[],
+            deliveryFlow=[],
+            controlFlow=[],
+            engineeringFlow=[],
+            mlEnrichmentFlow=[],
+            durableZones=[
+                DurableDataZone(
+                    name="Gold",
+                    owner="MotherDuck / DuckLake",
+                    purpose="Canonical Gold",
+                )
+            ],
+            businessReactInScope=True,
+        )
+
+
+def test_gold_contract_validation_rejects_bad_names_and_duplicate_consumers() -> None:
+    with pytest.raises(ValidationError):
+        GoldTableContract(
+            name="sales_daily",
+            grain="day",
+            purpose="bad namespace",
+            consumers=["SQL"],
+            storage="MotherDuck / DuckLake",
+        )
+
+    with pytest.raises(ValidationError):
+        GoldTableContract(
+            name="gold.sales_daily",
+            grain="day",
+            purpose="duplicate consumers",
+            consumers=["SQL", "SQL"],
+            storage="MotherDuck / DuckLake",
+        )
+
+
+def test_provider_inventory_rejects_duplicate_ids_and_unverified_live_quota() -> None:
+    provider = ProviderInventoryItem(
+        id="same",
+        name="Same",
+        category="compute",
+        state="external",
+        role="test",
+        costIntent="unknown",
+        telemetry="not-connected",
+        limitsVerified=False,
+        detail="test",
+    )
+    with pytest.raises(ValidationError):
+        ProviderInventory(providers=[provider, provider])
+
+    with pytest.raises(ValidationError):
+        ProviderInventory(
+            providers=[
+                ProviderInventoryItem(
+                    id="quota",
+                    name="Quota",
+                    category="compute",
+                    state="external",
+                    role="test",
+                    costIntent="unknown",
+                    telemetry="live",
+                    limitsVerified=False,
+                    detail="test",
+                )
+            ],
+            usageBarsRequireVerifiedLimits=True,
+        )
