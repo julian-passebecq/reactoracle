@@ -38,3 +38,11 @@ export function useCommandStatus(commandId: string | null) {
     },
   });
 }
+
+export function useRecentCommands() {
+  return useQuery({
+    queryKey: ["commands", "recent"],
+    queryFn: () => controlPlane.getRecentCommands(),
+    refetchInterval: 5000,
+  });
+}
