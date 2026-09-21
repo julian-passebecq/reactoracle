@@ -112,7 +112,7 @@ export REACTORACLE_AGENT_TOKEN='replace-me'
 fastapi dev app/main.py
 ```
 
-The browser-facing API is read-only in the current phase. The agent ingress requires a bearer token.
+The browser-facing API is read-mostly. Moderate-risk workload restart exists but is disabled unless both the Control API mutation flag and the narrow restart RBAC overlay are enabled. Agent ingress requires a bearer token.
 
 ## Oracle agent
 
@@ -142,7 +142,7 @@ The agent opens no inbound administration port.
 - no generic remote-shell API
 - no SSH key, OCI secret or cluster-admin kubeconfig in the browser
 - agent traffic is outbound from the VM
-- agent Kubernetes access is read-only through dedicated RBAC
+- base agent Kubernetes access is read-only; optional restart capability uses a separate narrow get/patch RBAC overlay
 - OpenTofu credentials remain in CI
 - disruptive operations will require explicit confirmation and audit records
 - destructive operations remain disabled during bootstrap
