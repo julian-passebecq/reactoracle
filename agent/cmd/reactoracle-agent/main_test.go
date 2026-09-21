@@ -153,3 +153,56 @@ func TestSafeHealthCheckCommandRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected health result: %#v", received.Result)
 	}
 }
+
+
+func TestBuildLogCommand(t *testing.T) {
+	args, metadata, err := buildLogCommand(map[string]any{
+		"namespace": "airflow",
+		"name":      "airflow-scheduler",
+		"kind":      "Deployment",
+		"tail":      float64(120),
+	})
+	if err != nil {
+		t.Fatalf("buildLogCommand: %v", err)
+	}
+	want := []string{"logs", "-n", "airflow", "deployment/airflow-scheduler", "--tail", "120", "--timestamps=true", "--all-pods=true"}
+	if len(args) != len(want) {
+		t.Fatalf("args = %#v, want %#v", args, want)
+	}
+	for i := range want {
+		if args[i] != want[i] {
+			t.Fatalf("args[%d] = %q, want %q", i, args[i], want[i])
+		}
+	}
+	if metadata["namespace"] != "airflow" || metadata["workload"] != "airflow-scheduler" {
+		t.Fatalf("unexpected metadata: %#v", metadata)
+	}
+}
+
+func TestBuildLogCommandRejectsUnsafeArguments(t *testing.T) {
+	cases := []map[string]any{
+		{"namespace": "airflow;rm", "name": "scheduler", "kind": "Deployment", "tail": float64(100)},
+		{"namespace": "airflow", "name": "scheduler", "kind": "Pod", "tail": float64(100)},
+		{"namespace": "airflow", "name": "scheduler", "kind": "Deployment", "tail": float64(5000)},
+	}
+	for _, arguments := range cases {
+		if _, _, err := buildLogCommand(arguments); err == nil {
+			t.Fatalf("expected validation error for %#v", arguments)
+		}
+	}
+}
+
+func TestSafeKubernetesName(t *testing.T) {
+	valid := []string{"airflow", "spark-history", "monitoring.v1"}
+	for _, value := range valid {
+		if !isSafeKubernetesName(value) {
+			t.Fatalf("expected valid Kubernetes name %q", value)
+		}
+	}
+	invalid := []string{"", "-airflow", "airflow-", "airflow/scheduler", "Airflow", "airflow;rm"}
+	for _, value := range invalid {
+		if isSafeKubernetesName(value) {
+			t.Fatalf("expected invalid Kubernetes name %q", value)
+		}
+	}
+}
