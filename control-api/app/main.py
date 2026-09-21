@@ -5,7 +5,7 @@ import re
 import secrets
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .models import (
@@ -191,7 +191,7 @@ def create_command(request: CommandRequest) -> CommandRun:
 
 
 @app.get("/api/v1/commands", response_model=list[CommandRun])
-def recent_commands(limit: int = 20) -> list[CommandRun]:
+def recent_commands(limit: int = Query(default=20, ge=1, le=100)) -> list[CommandRun]:
     return store.recent_commands(limit)
 
 
@@ -223,6 +223,15 @@ def next_agent_command(machineId: str) -> AgentCommand | Response:
 
 @app.post("/api/v1/agent/commands/{command_id}/result", response_model=CommandRun, dependencies=[Depends(require_agent_token)])
 def agent_command_result(command_id: str, result: AgentCommandResult) -> CommandRun:
+    current = store.get_command(command_id)
+    if current is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found.")
+    if current.status != "running":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Command result can only complete a running command; current state is {current.status}.",
+        )
+
     run = store.complete_command(command_id, result)
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found.")
