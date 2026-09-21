@@ -1,15 +1,6 @@
-export type DataFactoryStageState = "planned" | "live" | "external" | "optional";
+import type { ContosoGenerationPlan, DataFactoryPlan, DataFactoryStage } from "../domain/types";
 
-export type DataFactoryStage = {
-  id: string;
-  name: string;
-  engine: string;
-  location: string;
-  state: DataFactoryStageState;
-  detail: string;
-};
-
-export const contosoPlan = {
+export const contosoPlan: ContosoGenerationPlan = {
   scenario: "retail.customer_satisfaction",
   generator: "Contoso Forge Lite",
   seed: 20260904,
@@ -122,3 +113,12 @@ export const mlDataFactoryStages: DataFactoryStage[] = [
     detail: "Compact latest predictions / metrics only when a serving use case needs them",
   },
 ];
+
+
+export const dataFactoryPlanMock: DataFactoryPlan = {
+  contoso: contosoPlan,
+  coreStages: coreDataFactoryStages,
+  mlStages: mlDataFactoryStages,
+  executionEnabled: false,
+  businessReactInScope: false,
+};
