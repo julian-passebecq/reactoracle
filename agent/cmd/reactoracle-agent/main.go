@@ -297,7 +297,7 @@ func buildRestartCommand(arguments map[string]any) ([]string, map[string]any, er
 	}
 
 	namespace, ok := arguments["namespace"].(string)
-	if !ok || !isSafeKubernetesName(namespace) {
+	if !ok || !isSafeKubernetesNamespace(namespace) {
 		return nil, nil, errors.New("invalid Kubernetes namespace")
 	}
 	name, ok := arguments["name"].(string)
@@ -427,6 +427,22 @@ func buildLogCommand(arguments map[string]any) ([]string, map[string]any, error)
 		"tail":      tail,
 	}
 	return args, metadata, nil
+}
+
+func isSafeKubernetesNamespace(value string) bool {
+	if value == "" || len(value) > 63 {
+		return false
+	}
+	for i, r := range value {
+		valid := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-'
+		if !valid {
+			return false
+		}
+		if (i == 0 || i == len(value)-1) && r == '-' {
+			return false
+		}
+	}
+	return true
 }
 
 func isSafeKubernetesName(value string) bool {
