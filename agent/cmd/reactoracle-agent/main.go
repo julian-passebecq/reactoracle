@@ -35,9 +35,10 @@ type Heartbeat struct {
 }
 
 type AgentCommand struct {
-	ID        string `json:"id"`
-	MachineID string `json:"machineId"`
-	Command   string `json:"command"`
+	ID        string         `json:"id"`
+	MachineID string         `json:"machineId"`
+	Command   string         `json:"command"`
+	Arguments map[string]any `json:"arguments,omitempty"`
 }
 
 type CommandResult struct {
@@ -265,11 +266,119 @@ func processNextCommand(
 			"namespaceCount": len(namespaces),
 			"checkedAt":      time.Now().UTC().Format(time.RFC3339),
 		}
+	case "k8s.logs":
+		result = executeLogCommand(ctx, command.Arguments)
 	default:
 		result.Error = "unsupported command"
 	}
 
 	return postJSON(ctx, client, cfg, "/api/v1/agent/commands/"+url.PathEscape(command.ID)+"/result", result)
+}
+
+func executeLogCommand(ctx context.Context, arguments map[string]any) CommandResult {
+	args, metadata, err := buildLogCommand(arguments)
+	if err != nil {
+		return CommandResult{Status: "failed", Error: err.Error()}
+	}
+
+	output, err := kubectlOutput(ctx, args...)
+	if err != nil {
+		return CommandResult{Status: "failed", Error: "kubectl logs failed: " + err.Error()}
+	}
+
+	const maxLogBytes = 256 * 1024
+	truncated := false
+	if len(output) > maxLogBytes {
+		output = output[len(output)-maxLogBytes:]
+		truncated = true
+	}
+
+	text := string(output)
+	lineCount := 0
+	if strings.TrimSpace(text) != "" {
+		lineCount = len(strings.Split(strings.TrimRight(text, "\n"), "\n"))
+	}
+	metadata["text"] = text
+	metadata["lineCount"] = lineCount
+	metadata["truncated"] = truncated
+	metadata["collectedAt"] = time.Now().UTC().Format(time.RFC3339)
+
+	return CommandResult{Status: "success", Result: metadata}
+}
+
+func buildLogCommand(arguments map[string]any) ([]string, map[string]any, error) {
+	namespace, ok := arguments["namespace"].(string)
+	if !ok || !isSafeKubernetesName(namespace) {
+		return nil, nil, errors.New("invalid Kubernetes namespace")
+	}
+	name, ok := arguments["name"].(string)
+	if !ok || !isSafeKubernetesName(name) {
+		return nil, nil, errors.New("invalid Kubernetes workload name")
+	}
+	kind, ok := arguments["kind"].(string)
+	if !ok {
+		return nil, nil, errors.New("missing Kubernetes workload kind")
+	}
+	resourceKind := ""
+	switch kind {
+	case "Deployment":
+		resourceKind = "deployment"
+	case "StatefulSet":
+		resourceKind = "statefulset"
+	case "DaemonSet":
+		resourceKind = "daemonset"
+	case "Job":
+		resourceKind = "job"
+	default:
+		return nil, nil, errors.New("unsupported Kubernetes workload kind")
+	}
+
+	tail := 100
+	if raw, exists := arguments["tail"]; exists {
+		switch value := raw.(type) {
+		case float64:
+			tail = int(value)
+		case int:
+			tail = value
+		case json.Number:
+			parsed, err := value.Int64()
+			if err != nil {
+				return nil, nil, errors.New("invalid log tail")
+			}
+			tail = int(parsed)
+		default:
+			return nil, nil, errors.New("invalid log tail")
+		}
+	}
+	if tail < 10 || tail > 500 {
+		return nil, nil, errors.New("log tail must be between 10 and 500")
+	}
+
+	resource := resourceKind + "/" + name
+	args := []string{"logs", "-n", namespace, resource, "--tail", strconv.Itoa(tail), "--timestamps=true", "--all-pods=true"}
+	metadata := map[string]any{
+		"namespace": namespace,
+		"workload":  name,
+		"kind":      kind,
+		"tail":      tail,
+	}
+	return args, metadata, nil
+}
+
+func isSafeKubernetesName(value string) bool {
+	if value == "" || len(value) > 253 {
+		return false
+	}
+	for i, r := range value {
+		valid := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '.'
+		if !valid {
+			return false
+		}
+		if (i == 0 || i == len(value)-1) && (r == '-' || r == '.') {
+			return false
+		}
+	}
+	return true
 }
 
 func getNextCommand(ctx context.Context, client *http.Client, cfg Config, machineID string) (*AgentCommand, error) {
