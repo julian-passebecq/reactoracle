@@ -144,5 +144,6 @@ See:
 - `docs/ARCHITECTURE.md`
 - `docs/CONTROL_API.md`
 - `docs/ROADMAP.md`
+- `docs/DEPLOYMENT.md`
 - `agent/README.md`
 - `kubernetes/README.md`
