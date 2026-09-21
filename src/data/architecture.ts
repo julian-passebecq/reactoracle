@@ -78,7 +78,7 @@ export const architectureNodes: ArchitectureNode[] = [
     layer: "ml",
     state: "planned",
     provider: "Kaggle",
-    role: "External bounded ML / AutoML execution",
+    role: "Optional external bounded ML / AutoML execution from feature tables",
     durable: false,
     location: "Managed external compute",
   },
@@ -88,7 +88,7 @@ export const architectureNodes: ArchitectureNode[] = [
     layer: "serving",
     state: "optional",
     provider: "Neon Postgres",
-    role: "Small serving tables, ML metrics, predictions and platform metadata",
+    role: "Compact serving tables, ML metrics, latest predictions and platform metadata",
     durable: true,
     location: "Managed external",
   },
@@ -98,7 +98,7 @@ export const architectureNodes: ArchitectureNode[] = [
     layer: "serving",
     state: "planned",
     provider: "dbt Core",
-    role: "Curated analytical marts over Gold / serving data",
+    role: "Optional analytical marts over durable Gold data",
     durable: false,
     location: "Ephemeral Oracle K3s job",
   },
@@ -134,23 +134,15 @@ export const architectureNodes: ArchitectureNode[] = [
   },
 ];
 
-export const primaryDataFlow = [
-  "contoso",
-  "motherduck",
-  "airflow",
-  "spark",
-  "motherduck",
-  "kaggle",
-  "neon",
-  "dbt",
-  "bi",
-];
+export const engineeringFlow = ["contoso", "motherduck", "airflow", "spark", "motherduck", "bi"];
+
+export const mlEnrichmentFlow = ["motherduck", "kaggle", "motherduck", "neon"];
 
 export const durableDataZones = [
   { name: "Raw", owner: "MotherDuck / DuckLake", purpose: "Generated Parquet and ingested source data" },
   { name: "Bronze", owner: "MotherDuck / DuckLake", purpose: "Durable landed / typed data" },
   { name: "Silver", owner: "MotherDuck / DuckLake", purpose: "Validated and conformed data" },
   { name: "Gold", owner: "MotherDuck / DuckLake", purpose: "Canonical analytical tables served outside the VM" },
-  { name: "Features", owner: "MotherDuck / DuckLake", purpose: "ML-ready feature datasets" },
-  { name: "ML results", owner: "Neon (small serving state) + lakehouse history", purpose: "Metrics, predictions and model metadata" },
+  { name: "Features", owner: "MotherDuck / DuckLake", purpose: "ML-ready feature datasets derived from governed data" },
+  { name: "ML results", owner: "MotherDuck / DuckLake", purpose: "Historical predictions and analytical model outputs; Neon may mirror compact latest-state views" },
 ];
