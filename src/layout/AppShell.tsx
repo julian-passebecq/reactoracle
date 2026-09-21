@@ -1,5 +1,5 @@
 import { Divider, Text } from "@fluentui/react-components";
-import { Activity24Regular, Apps24Regular, Cloud24Regular, DataUsage24Regular, DocumentBulletList24Regular, Pulse24Regular, Server24Regular, Settings24Regular, Wrench24Regular } from "@fluentui/react-icons";
+import { Apps24Regular, Cloud24Regular, DataUsage24Regular, DocumentBulletList24Regular, History24Regular, Pulse24Regular, Server24Regular, Settings24Regular, Wrench24Regular } from "@fluentui/react-icons";
 import { NavLink, Outlet } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
 import { runtimeConfig } from "../config";
@@ -12,7 +12,7 @@ const nav = [
   { to: "/monitoring", label: "Monitoring", icon: <Server24Regular /> },
   { to: "/logs", label: "Logs", icon: <DocumentBulletList24Regular /> },
   { to: "/maintenance", label: "Maintenance", icon: <Wrench24Regular /> },
-  { to: "/activity", label: "Activity", icon: <Activity24Regular /> },
+  { to: "/activity", label: "Activity", icon: <History24Regular /> },
   { to: "/settings", label: "Settings", icon: <Settings24Regular /> },
 ];
 
