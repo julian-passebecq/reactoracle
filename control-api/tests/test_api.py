@@ -307,7 +307,8 @@ def test_k8s_restart_command_round_trip(monkeypatch) -> None:
     assert leased.json()["command"] == "k8s.restart_workload"
 
 
-def test_k8s_restart_rejects_jobs_and_extra_arguments() -> None:
+def test_k8s_restart_rejects_jobs_and_extra_arguments(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_ENABLE_MUTATIONS", "true")
     job_response = client.post(
         "/api/v1/commands",
         json={
