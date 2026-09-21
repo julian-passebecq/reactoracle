@@ -6,6 +6,7 @@ import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { WorkloadTable } from "../components/WorkloadTable";
 import { runtimeConfig } from "../config";
+import { derivePlatformHealth, healthIssues } from "../domain/health";
 
 export function OverviewPage() {
   const overviewQuery = useOverview();
@@ -16,8 +17,10 @@ export function OverviewPage() {
   const vm = data.vm;
   const agentLabel = runtimeConfig.mode === "mock" ? "Mock data" : agentQuery.data?.connected ? "Agent connected" : "Agent offline";
   const agentDetail = runtimeConfig.mode === "mock" ? "Set VITE_CONTROL_API_BASE_URL for live mode" : agentQuery.data?.lastSnapshotAt ?? "No snapshot received";
+  const platformHealth = derivePlatformHealth(data, agentQuery.data?.connected, runtimeConfig.mode);
+  const issues = healthIssues(data);
   return <>
-    <PageHeader title="Oracle data lab" subtitle={vm.shape + " · " + vm.ocpu + " OCPU · " + vm.memoryGb + " GB RAM · K3s " + vm.k3sVersion} actions={<><StatusBadge status="healthy" /><Text>{vm.name}</Text></>} />
+    <PageHeader title="Oracle data lab" subtitle={vm.shape + " · " + vm.ocpu + " OCPU · " + vm.memoryGb + " GB RAM · K3s " + vm.k3sVersion} actions={<><StatusBadge status={platformHealth} /><Text>{vm.name}</Text></>} />
     <section className="metrics">
       <MetricCard label="CPU" value={vm.cpuPercent + "%"} detail="Host utilization" />
       <MetricCard label="Memory" value={vm.memoryUsedGb + " / " + vm.memoryGb + " GB"} detail="Available for jobs" />
@@ -28,6 +31,7 @@ export function OverviewPage() {
       <MetricCard label="Projected OCI bill" value={vm.projectedCost} detail="Free-tier guardrail" />
       <MetricCard label="Oracle agent" value={agentLabel} detail={agentDetail} />
     </section>
+    {issues.length > 0 ? <div className="healthNotice"><Text weight="semibold">Attention</Text><Text>{issues.join(" · ")}</Text></div> : null}
     <section className="gridTwo">
       <Card><CardHeader header={<Title3>Platform health</Title3>} /><div className="serviceList">
         {data.services.map((service) => <div className="serviceRow" key={service.id}><div><Text weight="semibold">{service.name}</Text><div className="muted small">{service.detail}</div></div><StatusBadge status={service.status} /></div>)}
