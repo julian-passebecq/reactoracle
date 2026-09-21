@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 Health = Literal["healthy", "idle", "warning", "offline"]
@@ -220,6 +220,35 @@ class PlatformArchitecture(BaseModel):
     goldSurvivesVmShutdown: bool = True
     businessReactInScope: bool = False
 
+    @model_validator(mode="after")
+    def validate_graph(self) -> "PlatformArchitecture":
+        node_ids = [node.id for node in self.nodes]
+        if len(node_ids) != len(set(node_ids)):
+            raise ValueError("Platform node ids must be unique.")
+
+        known = set(node_ids)
+        for flow_name in ("deliveryFlow", "controlFlow", "engineeringFlow", "mlEnrichmentFlow"):
+            flow = getattr(self, flow_name)
+            unknown = [node_id for node_id in flow if node_id not in known]
+            if unknown:
+                raise ValueError(f"{flow_name} references unknown platform nodes: {unknown}")
+
+        zone_names = [zone.name for zone in self.durableZones]
+        if len(zone_names) != len(set(zone_names)):
+            raise ValueError("Durable data zone names must be unique.")
+
+        if self.goldSurvivesVmShutdown:
+            gold = next((zone for zone in self.durableZones if zone.name == "Gold"), None)
+            if gold is None:
+                raise ValueError("Gold durability invariant requires a Gold durable data zone.")
+            if gold.owner != "MotherDuck / DuckLake":
+                raise ValueError("Gold durability invariant requires MotherDuck / DuckLake ownership.")
+
+        if self.businessReactInScope:
+            raise ValueError("Business React applications are outside the ReactOracle product boundary.")
+
+        return self
+
 
 class GoldTableContract(BaseModel):
     name: str
@@ -229,6 +258,22 @@ class GoldTableContract(BaseModel):
     storage: str
     mlDerived: bool = False
     status: Literal["planned", "available"] = "planned"
+
+    @field_validator("name")
+    @classmethod
+    def validate_gold_name(cls, value: str) -> str:
+        if not value.startswith("gold.") or value == "gold.":
+            raise ValueError("Gold table names must use the gold.<name> namespace.")
+        return value
+
+    @field_validator("consumers")
+    @classmethod
+    def validate_consumers(cls, value: list[str]) -> list[str]:
+        if not value:
+            raise ValueError("Gold tables must declare at least one consumer.")
+        if len(value) != len(set(value)):
+            raise ValueError("Gold table consumers must be unique.")
+        return value
 
 
 class ProviderInventoryItem(BaseModel):
@@ -246,3 +291,22 @@ class ProviderInventoryItem(BaseModel):
 class ProviderInventory(BaseModel):
     providers: list[ProviderInventoryItem]
     usageBarsRequireVerifiedLimits: bool = True
+
+    @model_validator(mode="after")
+    def validate_inventory(self) -> "ProviderInventory":
+        provider_ids = [provider.id for provider in self.providers]
+        if len(provider_ids) != len(set(provider_ids)):
+            raise ValueError("Provider ids must be unique.")
+
+        if self.usageBarsRequireVerifiedLimits:
+            invalid = [
+                provider.id
+                for provider in self.providers
+                if provider.telemetry == "live" and not provider.limitsVerified
+            ]
+            if invalid:
+                raise ValueError(
+                    "Providers cannot expose live quota telemetry without verified limits: "
+                    + ", ".join(invalid)
+                )
+        return self
