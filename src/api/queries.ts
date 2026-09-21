@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { LogQueryInput } from "../domain/types";
+import type { LogQueryInput, RestartWorkloadInput } from "../domain/types";
 import { controlPlane } from "./controlPlane";
 
 export function useOverview() {
@@ -52,5 +52,12 @@ export function useRecentCommands() {
 export function useLogQueryMutation() {
   return useMutation({
     mutationFn: (input: LogQueryInput) => controlPlane.runLogQuery(input),
+  });
+}
+
+
+export function useRestartWorkloadMutation() {
+  return useMutation({
+    mutationFn: (input: RestartWorkloadInput) => controlPlane.restartWorkload(input),
   });
 }
