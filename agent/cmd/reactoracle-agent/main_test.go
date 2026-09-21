@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
 func TestWorkloadStatus(t *testing.T) {
 	cases := []struct {
@@ -100,5 +105,51 @@ func TestApplyPodMetricsUsesLongestWorkloadPrefix(t *testing.T) {
 	}
 	if namespaces[0].CPUMillicores != 125 || namespaces[0].MemoryMB != 512 {
 		t.Fatalf("namespace metrics not applied: %+v", namespaces[0])
+	}
+}
+
+
+func TestSafeHealthCheckCommandRoundTrip(t *testing.T) {
+	var received CommandResult
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Fatalf("missing agent authorization")
+		}
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/agent/commands/next":
+			if got := r.URL.Query().Get("machineId"); got != "oracle-test" {
+				t.Fatalf("machineId = %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(AgentCommand{
+				ID: "cmd_test",
+				MachineID: "oracle-test",
+				Command: "vm.health_check",
+			})
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/agent/commands/cmd_test/result":
+			if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+				t.Fatalf("decode result: %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte("{}"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	cfg := Config{BaseURL: server.URL, Token: "test-token"}
+	host := HostSnapshot{ID: "oracle-test", CPUPercent: 20, MemoryUsedGB: 4, MemoryGB: 12, DiskPercent: 30}
+	workloads := []Workload{{Name: "airflow", Namespace: "airflow"}}
+	namespaces := []NamespaceSummary{{Name: "airflow", PodsReady: 1, PodsTotal: 1}}
+
+	if err := processNextCommand(t.Context(), server.Client(), cfg, host, workloads, namespaces, true); err != nil {
+		t.Fatalf("processNextCommand: %v", err)
+	}
+	if received.Status != "success" {
+		t.Fatalf("result status = %q", received.Status)
+	}
+	if got, ok := received.Result["k3sReachable"].(bool); !ok || !got {
+		t.Fatalf("unexpected health result: %#v", received.Result)
 	}
 }
