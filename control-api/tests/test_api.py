@@ -624,3 +624,55 @@ def test_provider_inventory_rejects_duplicate_ids_and_unverified_quota_policy() 
             providers=[provider],
             usageBarsRequireVerifiedLimits=False,
         )
+
+
+def test_data_factory_plan_contract() -> None:
+    response = client.get("/api/v1/platform/data-factory")
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["executionEnabled"] is False
+    assert body["businessReactInScope"] is False
+    assert body["contoso"]["optional"] is True
+    assert body["contoso"]["output"]["format"] == "Parquet"
+    assert body["contoso"]["output"]["destination"] == "MotherDuck / DuckLake"
+    assert "Gold" in body["contoso"]["output"]["durableZones"]
+
+    core_ids = [stage["id"] for stage in body["coreStages"]]
+    assert core_ids == ["generate", "lake-raw", "orchestrate", "process", "publish", "consume"]
+
+    ml_ids = [stage["id"] for stage in body["mlStages"]]
+    assert ml_ids == ["features", "train", "publish-ml", "serve-ml"]
+    assert next(stage for stage in body["mlStages"] if stage["id"] == "train")["location"] == "Kaggle"
+
+
+def test_data_factory_plan_rejects_v1_execution() -> None:
+    from app.models import ContosoGenerationPlan, ContosoMlPlan, ContosoOutputPlan, ContosoScale, DataFactoryPlan
+
+    contoso = ContosoGenerationPlan(
+        scenario="retail.customer_satisfaction",
+        generator="Contoso Forge Lite",
+        seed=1,
+        scale=ContosoScale(orders=10, customers=5, products=3, stores=1, days=30),
+        ml=ContosoMlPlan(
+            profile="causal-v1",
+            positiveOutcomeRate=0.1,
+            signalStrength=0.5,
+            noiseLevel=0.1,
+            target="customer dissatisfaction",
+            primarySignal="delivery delay",
+        ),
+        output=ContosoOutputPlan(
+            format="Parquet",
+            destination="MotherDuck / DuckLake",
+            durableZones=["Raw", "Gold"],
+        ),
+    )
+
+    with pytest.raises(ValidationError):
+        DataFactoryPlan(
+            contoso=contoso,
+            coreStages=[],
+            mlStages=[],
+            executionEnabled=True,
+        )
