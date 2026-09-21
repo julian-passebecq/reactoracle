@@ -258,9 +258,9 @@ def build_provider_inventory() -> ProviderInventory:
                 state="external",
                 role="Source repositories, DAGs, manifests, CI/CD and release artifacts",
                 costIntent="free-tier",
-                telemetry="partial",
+                telemetry="not-connected",
                 limitsVerified=False,
-                detail="Workflow state is available; account-level quota telemetry is not connected.",
+                detail="GitHub is the active source/CI provider, but ReactOracle has no GitHub usage adapter connected yet.",
             ),
             ProviderInventoryItem(
                 id="cloudflare",
