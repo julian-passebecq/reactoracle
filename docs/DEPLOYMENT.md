@@ -48,6 +48,7 @@ Optional:
 
 ```text
 REACTORACLE_ALLOWED_ORIGINS=https://your-react-frontend.example.com
+REACTORACLE_ENABLE_MUTATIONS=false
 ```
 
 The raw Control API should not be exposed as an unauthenticated public administration endpoint. Put the user-facing surface behind the chosen access/authentication layer.
@@ -145,3 +146,22 @@ The first live connection is successful when:
 6. the dedicated agent kubeconfig can list pods.
 7. the dedicated agent kubeconfig cannot delete pods.
 8. no new inbound Oracle management port has been opened.
+
+
+## Optional controlled restarts
+
+ReactOracle ships with mutating operations disabled. Keep them disabled until the user-facing Control API is behind the intended authentication layer.
+
+When you intentionally enable workload restarts:
+
+```text
+REACTORACLE_ENABLE_MUTATIONS=true
+```
+
+and apply the separate restart RBAC overlay:
+
+```bash
+kubectl apply -f kubernetes/system/reactoracle-agent-restart-rbac.yaml
+```
+
+The React UI reads `GET /api/v1/capabilities` and only renders restart controls when the API reports the capability enabled.
