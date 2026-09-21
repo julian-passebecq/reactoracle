@@ -270,3 +270,68 @@ def test_k8s_log_command_caps_tail() -> None:
         },
     )
     assert response.status_code == 422
+
+
+def test_k8s_restart_command_round_trip(monkeypatch) -> None:
+    monkeypatch.setenv("REACTORACLE_AGENT_TOKEN", "test-token")
+
+    created = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.restart_workload",
+            "machineId": "oracle-restart-test",
+            "arguments": {
+                "namespace": "airflow",
+                "name": "airflow-scheduler",
+                "kind": "Deployment",
+            },
+        },
+    )
+    assert created.status_code == 202
+    command = created.json()
+    assert command["status"] == "queued"
+    assert command["risk"] == "moderate"
+    assert command["arguments"] == {
+        "namespace": "airflow",
+        "name": "airflow-scheduler",
+        "kind": "Deployment",
+    }
+
+    leased = client.get(
+        "/api/v1/agent/commands/next",
+        params={"machineId": "oracle-restart-test"},
+        headers={"Authorization": "Bearer test-token"},
+    )
+    assert leased.status_code == 200
+    assert leased.json()["command"] == "k8s.restart_workload"
+
+
+def test_k8s_restart_rejects_jobs_and_extra_arguments() -> None:
+    job_response = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.restart_workload",
+            "machineId": "oracle-restart-test",
+            "arguments": {
+                "namespace": "spark",
+                "name": "spark-job",
+                "kind": "Job",
+            },
+        },
+    )
+    assert job_response.status_code == 422
+
+    extra_response = client.post(
+        "/api/v1/commands",
+        json={
+            "command": "k8s.restart_workload",
+            "machineId": "oracle-restart-test",
+            "arguments": {
+                "namespace": "airflow",
+                "name": "airflow-scheduler",
+                "kind": "Deployment",
+                "image": "malicious-change",
+            },
+        },
+    )
+    assert extra_response.status_code == 422
