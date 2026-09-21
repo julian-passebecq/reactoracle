@@ -36,6 +36,8 @@ Oracle A1 VM
         +-- Docker for build/test work when useful
 
 External services such as managed Kafka, FastAPI application workloads, MotherDuck and Neon stay outside the VM.
+
+The target data architecture treats **Oracle as compute** and **MotherDuck / DuckLake as durable analytical storage**. Raw, Bronze, Silver, Gold and feature tables should survive Oracle VM shutdown/rebuild. ReactOracle stops at the Gold serving boundary; business-specific React dashboards are intentionally out of scope.
 ```
 
 OpenTofu manages OCI infrastructure through CI rather than running as a permanent service on the VM.
@@ -45,6 +47,8 @@ OpenTofu manages OCI infrastructure through CI rather than running as a permanen
 The frontend already provides routed pages for:
 
 - Overview
+- Architecture
+- Topology
 - Infrastructure / OpenTofu
 - Kubernetes
 - Data Platform
@@ -149,5 +153,6 @@ See:
 - `docs/DEPLOYMENT.md`
 - `docs/MONITORING.md`
 - `docs/DATA_FACTORY_ROADMAP.md`
+- `docs/GOLD_SERVING.md`
 - `agent/README.md`
 - `kubernetes/README.md`
