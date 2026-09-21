@@ -11,6 +11,7 @@ const KubernetesPage = lazy(() => import("./pages/KubernetesPage").then((module)
 const DataFactoryPage = lazy(() => import("./pages/DataFactoryPage").then((module) => ({ default: module.DataFactoryPage })));
 const DataPlatformPage = lazy(() => import("./pages/DataPlatformPage").then((module) => ({ default: module.DataPlatformPage })));
 const MonitoringPage = lazy(() => import("./pages/MonitoringPage").then((module) => ({ default: module.MonitoringPage })));
+const ProvidersPage = lazy(() => import("./pages/ProvidersPage").then((module) => ({ default: module.ProvidersPage })));
 const LogsPage = lazy(() => import("./pages/LogsPage").then((module) => ({ default: module.LogsPage })));
 const MaintenancePage = lazy(() => import("./pages/MaintenancePage").then((module) => ({ default: module.MaintenancePage })));
 const ActivityPage = lazy(() => import("./pages/ActivityPage").then((module) => ({ default: module.ActivityPage })));
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="data-factory" element={<DataFactoryPage />} />
           <Route path="data-platform" element={<DataPlatformPage />} />
           <Route path="monitoring" element={<MonitoringPage />} />
+          <Route path="providers" element={<ProvidersPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="maintenance" element={<MaintenancePage />} />
           <Route path="activity" element={<ActivityPage />} />
