@@ -54,6 +54,7 @@ The frontend already provides routed pages for:
 - Data Factory
 - Data Platform
 - Monitoring
+- Providers
 - Logs
 - Maintenance
 - Activity
