@@ -184,3 +184,7 @@ class AgentCommandResult(BaseModel):
     status: Literal["success", "failed"]
     result: dict[str, object] | None = None
     error: str | None = None
+
+
+class Capabilities(BaseModel):
+    restartWorkload: bool = False
