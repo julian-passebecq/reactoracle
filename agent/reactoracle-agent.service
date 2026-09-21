@@ -1,0 +1,22 @@
+[Unit]
+Description=ReactOracle Oracle Ops Agent
+After=network-online.target k3s.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=/etc/reactoracle/agent.env
+ExecStart=/usr/local/bin/reactoracle-agent
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ReadWritePaths=/var/lib/reactoracle
+
+[Install]
+WantedBy=multi-user.target
