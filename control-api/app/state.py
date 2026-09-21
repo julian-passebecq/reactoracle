@@ -58,7 +58,8 @@ class ControlPlaneStore:
             connected = False
             if self._heartbeat is not None:
                 age = datetime.now(timezone.utc) - self._heartbeat.sentAt
-                connected = age.total_seconds() < 90
+                age_seconds = age.total_seconds()
+                connected = 0 <= age_seconds < 90
             return AgentStatus(
                 connected=connected,
                 lastHeartbeat=deepcopy(self._heartbeat),
