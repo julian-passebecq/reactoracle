@@ -120,3 +120,75 @@ tbody tr:last-child td { border-bottom: 0; }
 .restartDialogContent { display: grid; gap: 16px; }
 .restartTarget { display: grid; grid-template-columns: 120px 1fr; gap: 8px 14px; padding: 12px; border: 1px solid #ededed; border-radius: 6px; background: #fafafa; }
 .commandProgress { display: flex; align-items: center; gap: 8px; }
+
+.architecturePrinciple {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 22px;
+  border: 1px solid #b7d7f0;
+  border-radius: 10px;
+  background: #f7fbff;
+}
+.architecturePrinciple > div { display: grid; gap: 7px; max-width: 980px; }
+.megaFlow {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+}
+.megaFlowStep { display: flex; align-items: stretch; gap: 8px; flex: 0 0 auto; }
+.megaFlowNode {
+  width: 190px;
+  min-height: 126px;
+  padding: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.megaFlowNodeHeader { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.megaFlowArrow { display: grid; place-items: center; min-width: 24px; color: #707070; font-size: 20px; }
+.durableZoneGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 14px;
+}
+.durableZoneCard { min-height: 145px; gap: 10px; }
+.architectureList { display: grid; gap: 0; margin-top: 8px; }
+.architectureList > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #ededed;
+}
+.architectureList > div:last-child { border-bottom: 0; }
+.architectureCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 14px;
+}
+.architectureNodeCard { min-height: 185px; display: flex; flex-direction: column; gap: 12px; }
+.architectureMeta {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  color: #707070;
+  font-size: 12px;
+}
+.architectureMeta span {
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: #f5f5f5;
+}
+@media (max-width: 1200px) {
+  .architecturePrinciple { align-items: flex-start; flex-direction: column; }
+  .durableZoneGrid, .architectureCardGrid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
