@@ -57,3 +57,15 @@ The current implementation calls local `kubectl get` commands using `/etc/reacto
 - no OCI credentials stored by the agent
 - OpenTofu credentials remain in CI
 - mutating operations are intentionally not implemented yet
+
+
+## Safe read commands
+
+The command channel is allow-listed. It currently supports:
+
+- `vm.health_check`
+- `k8s.logs`
+
+`k8s.logs` is not a shell proxy. The control API and the agent both validate the namespace, workload kind, workload name and tail length. The agent then executes a fixed `kubectl logs` invocation with a maximum 500-line tail and truncates oversized responses to 256 KiB.
+
+The dedicated Kubernetes service account has `get` permission on `pods/log` but still has no create/update/patch/delete permissions.
