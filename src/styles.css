@@ -101,3 +101,13 @@ tbody tr:last-child td { border-bottom: 0; }
 
 .healthCheckControl { display: inline-flex; align-items: center; gap: 8px; }
 .commandFailed { color: #a4262c; }
+
+.emptyPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px;
+  border: 1px dashed #c7c7c7;
+  border-radius: 8px;
+  background: #fff;
+}
