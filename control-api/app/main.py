@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
@@ -29,6 +30,8 @@ app = FastAPI(
 )
 
 origins = [item.strip() for item in os.getenv("REACTORACLE_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if item.strip()]
+K8S_NAME = re.compile(r"^[a-z0-9](?:[-a-z0-9.]*[a-z0-9])?$")
+LOG_KINDS = {"Deployment", "StatefulSet", "DaemonSet", "Job"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -82,11 +85,42 @@ def agent_status() -> AgentStatus:
 
 
 
+def _validated_log_arguments(arguments: dict[str, str | int | float | bool]) -> dict[str, str | int]:
+    namespace = arguments.get("namespace")
+    name = arguments.get("name")
+    kind = arguments.get("kind")
+    tail_value = arguments.get("tail", 100)
+
+    if not isinstance(namespace, str) or not K8S_NAME.fullmatch(namespace):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes namespace.")
+    if not isinstance(name, str) or not K8S_NAME.fullmatch(name):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid Kubernetes workload name.")
+    if not isinstance(kind, str) or kind not in LOG_KINDS:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported Kubernetes workload kind.")
+    if isinstance(tail_value, bool):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="tail must be an integer.")
+    try:
+        tail = int(tail_value)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="tail must be an integer.") from None
+    if tail < 10 or tail > 500:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="tail must be between 10 and 500 lines.")
+
+    return {"namespace": namespace, "name": name, "kind": kind, "tail": tail}
+
+
 @app.post("/api/v1/commands", response_model=CommandRun, status_code=status.HTTP_202_ACCEPTED)
 def create_command(request: CommandRequest) -> CommandRun:
-    if request.command != "vm.health_check":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported command.")
-    return store.create_health_check(request.machineId)
+    if request.command == "vm.health_check":
+        if request.arguments:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="vm.health_check does not accept arguments.")
+        return store.create_command(request.machineId, request.command)
+
+    if request.command == "k8s.logs":
+        arguments = _validated_log_arguments(request.arguments)
+        return store.create_command(request.machineId, request.command, arguments)
+
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported command.")
 
 
 @app.get("/api/v1/commands", response_model=list[CommandRun])
