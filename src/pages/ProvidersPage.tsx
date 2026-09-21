@@ -36,7 +36,7 @@ export function ProvidersPage() {
   }
 
   const providers = inventory.data.providers;
-  const live = providers.filter((provider) => provider.state === "live").length;
+  const implemented = providers.filter((provider) => provider.state === "live").length;
   const connected = providers.filter((provider) => provider.telemetry !== "not-connected").length;
   const planned = providers.filter((provider) => provider.state === "planned").length;
   const optional = providers.filter((provider) => provider.state === "optional").length;
@@ -51,7 +51,7 @@ export function ProvidersPage() {
 
       <section className="metrics">
         <MetricCard label="Provider inventory" value={String(providers.length)} detail="Compute, data, ML, CI/CD and edge" />
-        <MetricCard label="Live-role systems" value={String(live)} detail="Architecture lifecycle state; see Overview for runtime health" />
+        <MetricCard label="Implemented systems" value={String(implemented)} detail="Architecture lifecycle state; see Overview for runtime health" />
         <MetricCard label="Telemetry connected" value={String(connected)} detail="Live or partial adapters" />
         <MetricCard label="Planned / optional" value={String(planned + optional)} detail={planned + " planned · " + optional + " optional"} />
       </section>
