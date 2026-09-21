@@ -66,24 +66,34 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def require_overview() -> Overview:
+    current = store.get_overview()
+    if current is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No live Oracle agent snapshot has been received yet.",
+        )
+    return current
+
+
 @app.get("/api/v1/overview", response_model=Overview)
 def overview() -> Overview:
-    return store.get_overview()
+    return require_overview()
 
 
 @app.get("/api/v1/k8s/workloads", response_model=list[Workload])
 def workloads() -> list[Workload]:
-    return store.get_overview().workloads
+    return require_overview().workloads
 
 
 @app.get("/api/v1/infrastructure", response_model=InfrastructureSummary)
 def infrastructure() -> InfrastructureSummary:
-    return store.get_overview().infrastructure
+    return require_overview().infrastructure
 
 
 @app.get("/api/v1/maintenance", response_model=MaintenanceSummary)
 def maintenance() -> MaintenanceSummary:
-    return store.get_overview().maintenance
+    return require_overview().maintenance
 
 
 @app.get("/api/v1/agent/status", response_model=AgentStatus)
