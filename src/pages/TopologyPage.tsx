@@ -1,11 +1,14 @@
 import { Card, Spinner, Text, Title3 } from "@fluentui/react-components";
-import { useOverview } from "../api/queries";
+import { useAgentStatus, useOverview } from "../api/queries";
 import { DataError } from "../components/DataError";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
+import { runtimeConfig } from "../config";
+import { derivePlatformHealth } from "../domain/health";
 
 export function TopologyPage() {
   const overview = useOverview();
+  const agent = useAgentStatus();
 
   if (overview.isLoading) {
     return <div className="loadingState"><Spinner label="Loading platform topology" /></div>;
@@ -18,6 +21,12 @@ export function TopologyPage() {
 
   const persistent = data.workloads.filter((workload) => workload.kind !== "Job");
   const jobs = data.workloads.filter((workload) => workload.kind === "Job");
+  const platformHealth = derivePlatformHealth(data, agent.data?.connected, runtimeConfig.mode);
+  const agentHealth = runtimeConfig.mode === "mock"
+    ? "idle"
+    : agent.data?.connected
+      ? "healthy"
+      : "offline";
 
   return (
     <>
@@ -43,7 +52,7 @@ export function TopologyPage() {
             </Card>
             <div className="topologyArrow" aria-hidden="true">←</div>
             <Card className="topologyNode">
-              <div className="cardTop"><Title3>Oracle agent</Title3><StatusBadge status="healthy" /></div>
+              <div className="cardTop"><Title3>Oracle agent</Title3><StatusBadge status={agentHealth} /></div>
               <Text className="muted">Go · systemd · outbound only</Text>
               <Text size={200}>Host + K3s telemetry</Text>
             </Card>
@@ -60,7 +69,7 @@ export function TopologyPage() {
                 <Title3>{data.vm.name}</Title3>
                 <Text className="muted">{data.vm.shape}</Text>
               </div>
-              <StatusBadge status="healthy" />
+              <StatusBadge status={platformHealth} />
             </div>
             <div className="topologyHostMetrics">
               <span>{data.vm.ocpu} OCPU</span>
