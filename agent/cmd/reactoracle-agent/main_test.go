@@ -206,3 +206,40 @@ func TestSafeKubernetesName(t *testing.T) {
 		}
 	}
 }
+
+
+func TestParseAptUpgradable(t *testing.T) {
+	input := `Listing... Done
+linux-image/noble-security 1.2 arm64 [upgradable from: 1.1]
+curl/noble-updates 8.0 arm64 [upgradable from: 7.9]
+openssl/noble-updates,noble-security 3.0 arm64 [upgradable from: 2.9]
+`
+	total, security := parseAptUpgradable(input)
+	if total != 3 {
+		t.Fatalf("total = %d, want 3", total)
+	}
+	if security != 2 {
+		t.Fatalf("security = %d, want 2", security)
+	}
+}
+
+func TestParseHumanBytes(t *testing.T) {
+	cases := map[string]float64{
+		"0B":     0,
+		"500MB":  500_000_000,
+		"1.5GB":  1_500_000_000,
+		"2KB":    2_000,
+	}
+	for raw, want := range cases {
+		got, err := parseHumanBytes(raw)
+		if err != nil {
+			t.Fatalf("parseHumanBytes(%q): %v", raw, err)
+		}
+		if got != want {
+			t.Fatalf("parseHumanBytes(%q) = %v, want %v", raw, got, want)
+		}
+	}
+	if _, err := parseHumanBytes("not-a-size"); err == nil {
+		t.Fatal("expected invalid size to return an error")
+	}
+}
