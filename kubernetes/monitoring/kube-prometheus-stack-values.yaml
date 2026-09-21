@@ -1,0 +1,92 @@
+# Resource-aware defaults for a single Oracle A1 / K3s node.
+# Tune only after observing real idle and peak usage in ReactOracle.
+
+alertmanager:
+  enabled: false
+
+grafana:
+  enabled: true
+  defaultDashboardsEnabled: true
+  admin:
+    existingSecret: reactoracle-grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 3d
+    retentionSize: 3GB
+    resources:
+      requests:
+        cpu: 150m
+        memory: 384Mi
+      limits:
+        cpu: 700m
+        memory: 1Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 4Gi
+    walCompression: true
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 30m
+      memory: 80Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 192Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+
+# K3s commonly does not expose these control-plane component metrics
+# through the same endpoints as a kubeadm cluster.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
