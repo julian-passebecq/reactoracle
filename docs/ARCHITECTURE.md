@@ -73,6 +73,7 @@ V1 exposes this architecture and capability model; generator execution is a late
 - Data Factory
 - Data Platform
 - Monitoring
+- Providers
 - Logs
 - Maintenance
 - Activity
@@ -81,3 +82,12 @@ V1 exposes this architecture and capability model; generator execution is a late
 The future Data Factory / source layer is documented in `docs/DATA_FACTORY_ROADMAP.md`. The Gold serving boundary is documented in `docs/GOLD_SERVING.md`. Business-specific React dashboards are outside this repository; ReactOracle serves and exposes Gold rather than implementing the consuming application.
 
 The first implementation is UI-first with typed mock data. Live adapters should be introduced behind stable domain interfaces rather than wiring UI components directly to Kubernetes or OCI APIs.
+
+
+## Provider inventory policy
+
+ReactOracle keeps provider/free-tier inventory separate from workload telemetry.
+
+The provider page may show provider role, lifecycle state, cost intent and integration status. It must not render quota percentages from remembered or static documentation. A usage bar requires both a live provider usage adapter and a verified current limit.
+
+This keeps mutable free-tier limits from being mistaken for authoritative telemetry.
