@@ -22,7 +22,7 @@ class VmSummary(BaseModel):
     memoryUsedGb: float
     diskPercent: float
     uptime: str
-    projectedCost: str = "$0"
+    projectedCost: str = "Not connected"
     k3sVersion: str
     swapUsedGb: float = 0
     load1: float = 0
