@@ -154,10 +154,12 @@ class AgentStatus(BaseModel):
 
 class CommandRequest(BaseModel):
     command: Literal["vm.health_check"]
+    machineId: str
 
 
 class CommandRun(BaseModel):
     id: str
+    machineId: str
     command: Literal["vm.health_check"]
     status: Literal["queued", "running", "success", "failed"]
     risk: Literal["safe"] = "safe"
@@ -169,6 +171,7 @@ class CommandRun(BaseModel):
 
 class AgentCommand(BaseModel):
     id: str
+    machineId: str
     command: Literal["vm.health_check"]
 
 
