@@ -9,6 +9,12 @@ from .mock_data import build_live_overview_template
 from .models import AgentCommand, AgentCommandResult, AgentHeartbeat, AgentSnapshot, AgentStatus, CommandName, CommandRun, Overview, ServiceSummary
 
 
+class CommandStateConflict(RuntimeError):
+    def __init__(self, current_status: str) -> None:
+        super().__init__(current_status)
+        self.current_status = current_status
+
+
 class ControlPlaneStore:
     def __init__(self) -> None:
         self._lock = RLock()
@@ -117,6 +123,8 @@ class ControlPlaneStore:
             run = self._commands.get(command_id)
             if run is None:
                 return None
+            if run.status != "running":
+                raise CommandStateConflict(run.status)
             run.status = result.status
             run.result = result.result
             run.error = result.error
