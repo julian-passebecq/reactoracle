@@ -12,6 +12,7 @@ export interface ControlPlaneClient {
   getAgentStatus(): Promise<AgentStatus>;
   runHealthCheck(machineId: string): Promise<CommandRun>;
   getCommand(commandId: string): Promise<CommandRun>;
+  getRecentCommands(): Promise<CommandRun[]>;
 }
 
 class MockControlPlaneClient implements ControlPlaneClient {
@@ -56,6 +57,11 @@ class MockControlPlaneClient implements ControlPlaneClient {
     if (!run) throw new Error("Mock command not found");
     return { ...run };
   }
+
+  async getRecentCommands() {
+    await delay(80);
+    return Array.from(this.commands.values()).toReversed().map((run) => ({ ...run }));
+  }
 }
 
 class HttpControlPlaneClient implements ControlPlaneClient {
@@ -92,6 +98,9 @@ class HttpControlPlaneClient implements ControlPlaneClient {
   }
   getCommand(commandId: string) {
     return this.get<CommandRun>("/api/v1/commands/" + encodeURIComponent(commandId));
+  }
+  getRecentCommands() {
+    return this.get<CommandRun[]>("/api/v1/commands?limit=20");
   }
 }
 
