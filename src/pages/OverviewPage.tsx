@@ -1,6 +1,7 @@
 import { Button, Card, CardHeader, Divider, ProgressBar, Spinner, Text, Title3 } from "@fluentui/react-components";
 import { useAgentStatus, useOverview } from "../api/queries";
 import { DataError } from "../components/DataError";
+import { HealthCheckControl } from "../components/HealthCheckControl";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
@@ -40,7 +41,7 @@ export function OverviewPage() {
         <div className="capacityBlock"><div className="capacityLabel"><span>Memory</span><span>{vm.memoryUsedGb} / {vm.memoryGb} GB</span></div><ProgressBar value={vm.memoryUsedGb / vm.memoryGb} /></div>
         <div className="capacityBlock"><div className="capacityLabel"><span>CPU</span><span>{vm.cpuPercent}%</span></div><ProgressBar value={vm.cpuPercent / 100} /></div>
         <div className="capacityBlock"><div className="capacityLabel"><span>Disk</span><span>{vm.diskPercent}%</span></div><ProgressBar value={vm.diskPercent / 100} /></div>
-        <Divider /><div className="quickActions"><Button appearance="primary">Open monitoring</Button><Button>View logs</Button><Button>Run health check</Button></div>
+        <Divider /><div className="quickActions"><Button appearance="primary">Open monitoring</Button><Button>View logs</Button><HealthCheckControl machineId={vm.id} /></div>
       </Card>
     </section>
     <section>
