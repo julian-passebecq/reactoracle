@@ -43,16 +43,22 @@ type Snapshot struct {
 }
 
 type HostSnapshot struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	Shape        string  `json:"shape"`
-	OCPU         float64 `json:"ocpu"`
-	MemoryGB     float64 `json:"memoryGb"`
-	CPUPercent   float64 `json:"cpuPercent"`
-	MemoryUsedGB float64 `json:"memoryUsedGb"`
-	DiskPercent  float64 `json:"diskPercent"`
-	Uptime       string  `json:"uptime"`
-	K3sVersion   string  `json:"k3sVersion"`
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Shape         string  `json:"shape"`
+	OCPU          float64 `json:"ocpu"`
+	MemoryGB      float64 `json:"memoryGb"`
+	CPUPercent    float64 `json:"cpuPercent"`
+	MemoryUsedGB  float64 `json:"memoryUsedGb"`
+	SwapUsedGB    float64 `json:"swapUsedGb"`
+	Load1         float64 `json:"load1"`
+	DiskPercent   float64 `json:"diskPercent"`
+	DiskUsedGB    float64 `json:"diskUsedGb"`
+	DiskTotalGB   float64 `json:"diskTotalGb"`
+	NetworkRxMbps float64 `json:"networkRxMbps"`
+	NetworkTxMbps float64 `json:"networkTxMbps"`
+	Uptime        string  `json:"uptime"`
+	K3sVersion    string  `json:"k3sVersion"`
 }
 
 type Workload struct {
@@ -260,7 +266,10 @@ func collectHost(ctx context.Context) (HostSnapshot, error) {
 	}
 
 	cpuPercent, _ := sampleCPU(350 * time.Millisecond)
-	diskPercent, _ := rootDiskPercent()
+	rxMbps, txMbps, _ := sampleNetwork(350 * time.Millisecond)
+	diskPercent, diskUsedGB, diskTotalGB, _ := rootDiskStats()
+	swapUsedGB := readSwapUsedGB()
+	load1 := readLoad1()
 	uptime := readUptime()
 	k3sVersion := commandFirstLine(ctx, "k3s", "--version")
 	if k3sVersion == "" { k3sVersion = "unknown" }
@@ -271,11 +280,17 @@ func collectHost(ctx context.Context) (HostSnapshot, error) {
 		Shape: shape,
 		OCPU: round1(ocpu),
 		MemoryGB: round1(memoryGB),
-		CPUPercent: round1(cpuPercent),
-		MemoryUsedGB: round1(memoryUsedGB),
-		DiskPercent: round1(diskPercent),
-		Uptime: uptime,
-		K3sVersion: k3sVersion,
+		CPUPercent:    round1(cpuPercent),
+		MemoryUsedGB:  round1(memoryUsedGB),
+		SwapUsedGB:    round1(swapUsedGB),
+		Load1:         round1(load1),
+		DiskPercent:   round1(diskPercent),
+		DiskUsedGB:    round1(diskUsedGB),
+		DiskTotalGB:   round1(diskTotalGB),
+		NetworkRxMbps: round1(rxMbps),
+		NetworkTxMbps: round1(txMbps),
+		Uptime:        uptime,
+		K3sVersion:    k3sVersion,
 	}, nil
 }
 
@@ -347,13 +362,108 @@ func sampleCPU(wait time.Duration) (float64, error) {
 	return (1 - float64(idleDelta)/float64(totalDelta)) * 100, nil
 }
 
-func rootDiskPercent() (float64, error) {
+func rootDiskStats() (percent, usedGB, totalGB float64, err error) {
 	var stat syscall.Statfs_t
-	if err := syscall.Statfs("/", &stat); err != nil { return 0, err }
+	if err := syscall.Statfs("/", &stat); err != nil {
+		return 0, 0, 0, err
+	}
 	total := float64(stat.Blocks) * float64(stat.Bsize)
 	free := float64(stat.Bavail) * float64(stat.Bsize)
-	if total == 0 { return 0, nil }
-	return (total-free)/total*100, nil
+	if total == 0 {
+		return 0, 0, 0, nil
+	}
+	used := total - free
+	const gib = 1024 * 1024 * 1024
+	return used / total * 100, used / gib, total / gib, nil
+}
+
+func readSwapUsedGB() float64 {
+	data, err := os.ReadFile("/proc/meminfo")
+	if err != nil {
+		return 0
+	}
+	var totalKB, freeKB uint64
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		value, _ := strconv.ParseUint(fields[1], 10, 64)
+		switch strings.TrimSuffix(fields[0], ":") {
+		case "SwapTotal":
+			totalKB = value
+		case "SwapFree":
+			freeKB = value
+		}
+	}
+	if totalKB <= freeKB {
+		return 0
+	}
+	return float64(totalKB-freeKB) / 1024 / 1024
+}
+
+func readLoad1() float64 {
+	data, err := os.ReadFile("/proc/loadavg")
+	if err != nil {
+		return 0
+	}
+	fields := strings.Fields(string(data))
+	if len(fields) == 0 {
+		return 0
+	}
+	value, _ := strconv.ParseFloat(fields[0], 64)
+	return value
+}
+
+func readNetworkBytes() (rx, tx uint64, err error) {
+	data, err := os.ReadFile("/proc/net/dev")
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if !strings.Contains(line, ":") {
+			continue
+		}
+		parts := strings.SplitN(line, ":", 2)
+		iface := strings.TrimSpace(parts[0])
+		if iface == "lo" {
+			continue
+		}
+		fields := strings.Fields(parts[1])
+		if len(fields) < 16 {
+			continue
+		}
+		rxBytes, parseErr := strconv.ParseUint(fields[0], 10, 64)
+		if parseErr != nil {
+			continue
+		}
+		txBytes, parseErr := strconv.ParseUint(fields[8], 10, 64)
+		if parseErr != nil {
+			continue
+		}
+		rx += rxBytes
+		tx += txBytes
+	}
+	return rx, tx, nil
+}
+
+func sampleNetwork(wait time.Duration) (rxMbps, txMbps float64, err error) {
+	firstRx, firstTx, err := readNetworkBytes()
+	if err != nil {
+		return 0, 0, err
+	}
+	time.Sleep(wait)
+	secondRx, secondTx, err := readNetworkBytes()
+	if err != nil {
+		return 0, 0, err
+	}
+	seconds := wait.Seconds()
+	if seconds <= 0 {
+		return 0, 0, nil
+	}
+	return float64(secondRx-firstRx) * 8 / seconds / 1_000_000,
+		float64(secondTx-firstTx) * 8 / seconds / 1_000_000,
+		nil
 }
 
 func readUptime() string {
