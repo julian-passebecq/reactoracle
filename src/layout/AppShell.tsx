@@ -11,6 +11,7 @@ const nav = [
   { to: "/topology", label: "Topology", icon: <Server24Regular /> },
   { to: "/infrastructure", label: "Infrastructure", icon: <Cloud24Regular /> },
   { to: "/kubernetes", label: "Kubernetes", icon: <Apps24Regular /> },
+  { to: "/data-factory", label: "Data Factory", icon: <DataUsage24Regular /> },
   { to: "/data-platform", label: "Data Platform", icon: <DataUsage24Regular /> },
   { to: "/monitoring", label: "Monitoring", icon: <Server24Regular /> },
   { to: "/logs", label: "Logs", icon: <DocumentBulletList24Regular /> },
