@@ -89,7 +89,7 @@ export function LogsPage() {
               selectedOptions={[String(tail)]}
               onOptionSelect={(_, data) => setTail(Number(data.optionValue ?? 100))}
             >
-              {tailChoices.map((value) => <Option key={value} value={String(value)}>{value} lines</Option>)}
+              {tailChoices.map((value) => <Option key={value} value={String(value)} text={value + " lines"}>{value} lines</Option>)}
             </Dropdown>
           </div>
         </div>
