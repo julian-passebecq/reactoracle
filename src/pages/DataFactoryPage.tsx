@@ -1,6 +1,7 @@
-import { Badge, Card, Text, Title2, Title3 } from "@fluentui/react-components";
+import { Badge, Card, Spinner, Text, Title2, Title3 } from "@fluentui/react-components";
+import { useDataFactoryPlan } from "../api/queries";
 import { PageHeader } from "../components/PageHeader";
-import { contosoPlan, coreDataFactoryStages, mlDataFactoryStages, type DataFactoryStage, type DataFactoryStageState } from "../data/dataFactory";
+import type { DataFactoryStage, DataFactoryStageState } from "../domain/types";
 
 const stageColor: Record<DataFactoryStageState, "success" | "warning" | "informative" | "subtle"> = {
   live: "success",
@@ -31,6 +32,25 @@ function StageLane({ stages }: { stages: DataFactoryStage[] }) {
 }
 
 export function DataFactoryPage() {
+  const planQuery = useDataFactoryPlan();
+
+  if (planQuery.isLoading) {
+    return <div className="loadingState"><Spinner label="Loading Data Factory contract" /></div>;
+  }
+
+  if (planQuery.isError || !planQuery.data) {
+    return (
+      <Card className="errorCard">
+        <Title3>Data Factory contract unavailable</Title3>
+        <Text className="muted">
+          {planQuery.error instanceof Error ? planQuery.error.message : "The control plane did not return the Data Factory plan."}
+        </Text>
+      </Card>
+    );
+  }
+
+  const { contoso: contosoPlan, coreStages: coreDataFactoryStages, mlStages: mlDataFactoryStages, executionEnabled } = planQuery.data;
+
   return (
     <>
       <PageHeader
@@ -46,7 +66,7 @@ export function DataFactoryPage() {
             The generator is optional and does not block normal Oracle/Airflow/Spark work. V2 will add the headless C# execution path.
           </Text>
         </div>
-        <Badge color="warning">Execution planned</Badge>
+        <Badge color={executionEnabled ? "success" : "warning"}>{executionEnabled ? "Execution enabled" : "Execution planned"}</Badge>
       </section>
 
       <section className="gridTwo sectionGap">
