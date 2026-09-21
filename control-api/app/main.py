@@ -3,13 +3,17 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .models import (
+    AgentCommand,
+    AgentCommandResult,
     AgentHeartbeat,
     AgentSnapshot,
     AgentStatus,
+    CommandRequest,
+    CommandRun,
     InfrastructureSummary,
     MaintenanceSummary,
     Overview,
@@ -76,6 +80,28 @@ def agent_status() -> AgentStatus:
     return store.get_agent_status()
 
 
+
+
+@app.post("/api/v1/commands", response_model=CommandRun, status_code=status.HTTP_202_ACCEPTED)
+def create_command(request: CommandRequest) -> CommandRun:
+    if request.command != "vm.health_check":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported command.")
+    return store.create_health_check(request.machineId)
+
+
+@app.get("/api/v1/commands", response_model=list[CommandRun])
+def recent_commands(limit: int = 20) -> list[CommandRun]:
+    return store.recent_commands(limit)
+
+
+@app.get("/api/v1/commands/{command_id}", response_model=CommandRun)
+def command_status(command_id: str) -> CommandRun:
+    run = store.get_command(command_id)
+    if run is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found.")
+    return run
+
+
 @app.post("/api/v1/agent/heartbeat", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_agent_token)])
 def agent_heartbeat(heartbeat: AgentHeartbeat) -> None:
     store.record_heartbeat(heartbeat)
@@ -84,3 +110,19 @@ def agent_heartbeat(heartbeat: AgentHeartbeat) -> None:
 @app.post("/api/v1/agent/snapshot", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_agent_token)])
 def agent_snapshot(snapshot: AgentSnapshot) -> None:
     store.record_snapshot(snapshot)
+
+
+@app.get("/api/v1/agent/commands/next", response_model=AgentCommand | None, dependencies=[Depends(require_agent_token)])
+def next_agent_command(machineId: str) -> AgentCommand | Response:
+    command = store.lease_next_command(machineId)
+    if command is None:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return command
+
+
+@app.post("/api/v1/agent/commands/{command_id}/result", response_model=CommandRun, dependencies=[Depends(require_agent_token)])
+def agent_command_result(command_id: str, result: AgentCommandResult) -> CommandRun:
+    run = store.complete_command(command_id, result)
+    if run is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found.")
+    return run
