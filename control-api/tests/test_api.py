@@ -415,3 +415,31 @@ def test_gold_catalog_is_durable_and_namespaced() -> None:
 
     score_table = next(row for row in rows if row["name"] == "gold.customer_scores")
     assert score_table["mlDerived"] is True
+
+
+def test_provider_inventory_avoids_unverified_quota_claims() -> None:
+    response = client.get("/api/v1/platform/providers")
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["usageBarsRequireVerifiedLimits"] is True
+    providers = body["providers"]
+    ids = [provider["id"] for provider in providers]
+    assert len(ids) == len(set(ids))
+
+    assert all(provider["limitsVerified"] is False for provider in providers)
+    assert all("quotaUsedPct" not in provider for provider in providers)
+
+    oracle = next(provider for provider in providers if provider["id"] == "oracle")
+    assert oracle["state"] == "live"
+    assert oracle["telemetry"] == "partial"
+
+    motherduck = next(provider for provider in providers if provider["id"] == "motherduck")
+    assert motherduck["category"] == "lakehouse"
+    assert motherduck["state"] == "planned"
+
+    kaggle = next(provider for provider in providers if provider["id"] == "kaggle")
+    assert kaggle["category"] == "ml"
+
+    colab = next(provider for provider in providers if provider["id"] == "colab")
+    assert colab["state"] == "optional"
