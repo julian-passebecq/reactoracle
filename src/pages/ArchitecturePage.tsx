@@ -109,12 +109,11 @@ export function ArchitecturePage() {
           <Text size={200} weight="semibold">Core rule</Text>
           <Title2>Oracle is compute. MotherDuck / DuckLake is durable data.</Title2>
           <Text className="muted">
-            If the Oracle VM is stopped, Airflow, Spark and local observability disappear temporarily, but Raw, Bronze, Silver,
-            Gold and feature tables remain available outside the VM.
+            Target architecture: if the Oracle VM is stopped, Airflow, Spark and local observability disappear temporarily, while Raw, Bronze, Silver, Gold and feature tables remain in the external lakehouse.
           </Text>
         </div>
         <Badge color={data.goldSurvivesVmShutdown ? "success" : "warning"}>
-          {data.goldSurvivesVmShutdown ? "Gold survives VM shutdown" : "Durability not guaranteed"}
+          {data.goldSurvivesVmShutdown ? "Design invariant · Gold survives VM shutdown" : "Durability contract missing"}
         </Badge>
       </section>
 
