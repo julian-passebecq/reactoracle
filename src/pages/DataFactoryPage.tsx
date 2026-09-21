@@ -1,6 +1,6 @@
 import { Badge, Card, Text, Title2, Title3 } from "@fluentui/react-components";
 import { PageHeader } from "../components/PageHeader";
-import { contosoPlan, dataFactoryStages, type DataFactoryStageState } from "../data/dataFactory";
+import { contosoPlan, coreDataFactoryStages, mlDataFactoryStages, type DataFactoryStage, type DataFactoryStageState } from "../data/dataFactory";
 
 const stageColor: Record<DataFactoryStageState, "success" | "warning" | "informative"> = {
   live: "success",
@@ -8,12 +8,33 @@ const stageColor: Record<DataFactoryStageState, "success" | "warning" | "informa
   external: "informative",
 };
 
+function StageLane({ stages }: { stages: DataFactoryStage[] }) {
+  return (
+    <div className="factoryPipeline">
+      {stages.map((stage, index) => (
+        <div className="factoryStageWrap" key={stage.id}>
+          <Card className="factoryStageCard">
+            <div className="cardTop">
+              <Text weight="semibold">{stage.name}</Text>
+              <Badge color={stageColor[stage.state]}>{stage.state}</Badge>
+            </div>
+            <Title3>{stage.engine}</Title3>
+            <Text size={200} className="muted">{stage.location}</Text>
+            <Text size={200}>{stage.detail}</Text>
+          </Card>
+          {index < stages.length - 1 ? <div className="megaFlowArrow" aria-hidden="true">→</div> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function DataFactoryPage() {
   return (
     <>
       <PageHeader
         title="Data Factory"
-        subtitle="V1 architecture contract for deterministic Contoso generation → lakehouse → Spark → ML → Gold"
+        subtitle="V1 architecture contract for optional Contoso generation → durable Gold, with ML as a separate enrichment branch"
       />
 
       <section className="factoryNotice">
@@ -59,25 +80,19 @@ export function DataFactoryPage() {
         <div className="sectionHeader">
           <div>
             <Title3>Canonical pipeline</Title3>
-            <Text className="muted">The Oracle VM performs compute; MotherDuck / DuckLake owns durable analytical state.</Text>
+            <Text className="muted">Gold is complete before ML. Oracle performs compute; MotherDuck / DuckLake owns durable analytical state.</Text>
           </div>
         </div>
 
-        <div className="factoryPipeline">
-          {dataFactoryStages.map((stage, index) => (
-            <div className="factoryStageWrap" key={stage.id}>
-              <Card className="factoryStageCard">
-                <div className="cardTop">
-                  <Text weight="semibold">{stage.name}</Text>
-                  <Badge color={stageColor[stage.state]}>{stage.state}</Badge>
-                </div>
-                <Title3>{stage.engine}</Title3>
-                <Text size={200} className="muted">{stage.location}</Text>
-                <Text size={200}>{stage.detail}</Text>
-              </Card>
-              {index < dataFactoryStages.length - 1 ? <div className="megaFlowArrow" aria-hidden="true">→</div> : null}
-            </div>
-          ))}
+        <div className="factoryLanes">
+          <div>
+            <Text size={200} weight="semibold" className="architectureLaneLabel">Core data engineering → durable Gold</Text>
+            <StageLane stages={coreDataFactoryStages} />
+          </div>
+          <div>
+            <Text size={200} weight="semibold" className="architectureLaneLabel">Optional ML enrichment</Text>
+            <StageLane stages={mlDataFactoryStages} />
+          </div>
         </div>
       </section>
 
