@@ -36,6 +36,7 @@ Copy the binary plus `reactoracle-agent.service`, `agent.env.example` and `insta
 
 ```bash
 sudo ./install.sh
+sudo ./configure-kube-access.sh
 sudo nano /etc/reactoracle/agent.env
 sudo systemctl start reactoracle-agent
 sudo systemctl status reactoracle-agent
@@ -43,7 +44,7 @@ sudo systemctl status reactoracle-agent
 
 ## Kubernetes permissions
 
-The current implementation calls local `kubectl get` commands. Before production use, replace the default/root kubeconfig path with a dedicated least-privilege service account and kubeconfig that can only read the resource kinds ReactOracle requires.
+The current implementation calls local `kubectl get` commands using `/etc/reactoracle/agent.kubeconfig`. `configure-kube-access.sh` creates a dedicated service account with get/list/watch access only to nodes, namespaces, pods, Deployments, StatefulSets, DaemonSets and Jobs.
 
 ## Security boundary
 
