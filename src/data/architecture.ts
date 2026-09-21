@@ -179,7 +179,7 @@ export const controlFlow = ["reactoracle", "fastapi-cloud", "oracle-agent", "ora
 
 export const engineeringFlow = ["contoso", "motherduck", "airflow", "spark", "motherduck", "bi"];
 
-export const mlEnrichmentFlow = ["motherduck", "kaggle", "motherduck", "neon"];
+export const mlEnrichmentFlow = ["motherduck", "kaggle", "motherduck"];
 
 export const durableDataZones = [
   { name: "Raw", owner: "MotherDuck / DuckLake", purpose: "Generated Parquet and ingested source data" },
