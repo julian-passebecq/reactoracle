@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
 import { ActivityPage } from "./pages/ActivityPage";
+import { ArchitecturePage } from "./pages/ArchitecturePage";
 import { DataPlatformPage } from "./pages/DataPlatformPage";
 import { InfrastructurePage } from "./pages/InfrastructurePage";
 import { KubernetesPage } from "./pages/KubernetesPage";
@@ -16,6 +17,7 @@ export default function App() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<OverviewPage />} />
+        <Route path="architecture" element={<ArchitecturePage />} />
         <Route path="topology" element={<TopologyPage />} />
         <Route path="infrastructure" element={<InfrastructurePage />} />
         <Route path="kubernetes" element={<KubernetesPage />} />
