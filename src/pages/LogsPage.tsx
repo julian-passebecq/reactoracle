@@ -70,9 +70,9 @@ export function LogsPage() {
               value={selected ? selected.name : "No workloads"}
               selectedOptions={selected ? [selected.id] : []}
               onOptionSelect={(_, data) => setSelectedWorkloadId(String(data.optionValue ?? ""))}
-              disabled={workloads.data.length === 0}
+              disabled={workloads.length === 0}
             >
-              {workloads.data.map((workload) => (
+              {workloads.map((workload) => (
                 <Option key={workload.id} value={workload.id} text={workload.name}>
                   {workload.namespace} / {workload.name}
                 </Option>
