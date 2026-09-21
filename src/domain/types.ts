@@ -13,6 +13,12 @@ export type VmSummary = {
   uptime: string;
   projectedCost: string;
   k3sVersion: string;
+  swapUsedGb: number;
+  load1: number;
+  diskUsedGb: number;
+  diskTotalGb: number;
+  networkRxMbps: number;
+  networkTxMbps: number;
 };
 
 export type ServiceSummary = {
