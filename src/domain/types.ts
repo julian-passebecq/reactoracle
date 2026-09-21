@@ -187,6 +187,8 @@ export type DurableDataZone = {
 
 export type PlatformArchitecture = {
   nodes: PlatformNode[];
+  deliveryFlow: string[];
+  controlFlow: string[];
   engineeringFlow: string[];
   mlEnrichmentFlow: string[];
   durableZones: DurableDataZone[];
