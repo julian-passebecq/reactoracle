@@ -43,4 +43,16 @@ jobs:
       - run: gofmt -w cmd/reactoracle-agent/main.go cmd/reactoracle-agent/main_test.go
       - run: go vet ./...
       - run: go test ./...
-      - run: GOOS=linux GOARCH=arm64 go build -o /tmp/reactoracle-agent ./cmd/reactoracle-agent
+      - name: Build ARM64 bundle
+        run: |
+          bundle=/tmp/reactoracle-agent-linux-arm64
+          mkdir -p "$bundle"
+          GOOS=linux GOARCH=arm64 go build -o "$bundle/reactoracle-agent" ./cmd/reactoracle-agent
+          cp reactoracle-agent.service agent.env.example install.sh configure-kube-access.sh "$bundle/"
+          cp ../kubernetes/system/reactoracle-agent-rbac.yaml "$bundle/"
+          (cd "$bundle" && sha256sum reactoracle-agent > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reactoracle-agent-linux-arm64
+          path: /tmp/reactoracle-agent-linux-arm64
+          if-no-files-found: error
