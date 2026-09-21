@@ -159,3 +159,8 @@ export type RestartWorkloadInput = {
   name: string;
   kind: Exclude<Workload["kind"], "Job">;
 };
+
+
+export type Capabilities = {
+  restartWorkload: boolean;
+};
