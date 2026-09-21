@@ -22,6 +22,26 @@ export const architectureNodes: PlatformNode[] = [
     location: "Managed external",
   },
   {
+    id: "github-actions",
+    name: "GitHub Actions",
+    layer: "delivery",
+    state: "external",
+    provider: "GitHub",
+    role: "CI validation, ARM64 packaging and future OpenTofu plan/apply workflow",
+    durable: true,
+    location: "Managed external",
+  },
+  {
+    id: "cloudflare",
+    name: "Cloudflare",
+    layer: "delivery",
+    state: "external",
+    provider: "Cloudflare",
+    role: "Edge/DNS/access perimeter and frontend hosting target",
+    durable: true,
+    location: "Managed external",
+  },
+  {
     id: "motherduck",
     name: "MotherDuck / DuckLake",
     layer: "lakehouse",
@@ -30,6 +50,36 @@ export const architectureNodes: PlatformNode[] = [
     role: "Durable Parquet lakehouse for Raw, Bronze, Silver, Gold and ML features",
     durable: true,
     location: "Managed external",
+  },
+  {
+    id: "fastapi-cloud",
+    name: "FastAPI Cloud",
+    layer: "control",
+    state: "external",
+    provider: "FastAPI Cloud",
+    role: "External ReactOracle Control API hosting target",
+    durable: true,
+    location: "Managed external",
+  },
+  {
+    id: "oracle-agent",
+    name: "Oracle Ops Agent",
+    layer: "control",
+    state: "live",
+    provider: "Go / systemd",
+    role: "Outbound authenticated bridge for host and K3s telemetry/allow-listed operations",
+    durable: false,
+    location: "Oracle host",
+  },
+  {
+    id: "oracle-vm",
+    name: "Oracle A1 VM",
+    layer: "compute",
+    state: "live",
+    provider: "Oracle Cloud",
+    role: "K3s compute host for Airflow, Spark and observability",
+    durable: false,
+    location: "Oracle Cloud",
   },
   {
     id: "airflow",
@@ -123,6 +173,10 @@ export const architectureNodes: PlatformNode[] = [
   },
 ];
 
+export const deliveryFlow = ["github", "github-actions", "cloudflare", "reactoracle"];
+
+export const controlFlow = ["reactoracle", "fastapi-cloud", "oracle-agent", "oracle-vm"];
+
 export const engineeringFlow = ["contoso", "motherduck", "airflow", "spark", "motherduck", "bi"];
 
 export const mlEnrichmentFlow = ["motherduck", "kaggle", "motherduck", "neon"];
@@ -139,6 +193,8 @@ export const durableDataZones = [
 
 export const platformArchitectureMock: PlatformArchitecture = {
   nodes: architectureNodes,
+  deliveryFlow,
+  controlFlow,
   engineeringFlow,
   mlEnrichmentFlow,
   durableZones: durableDataZones,
