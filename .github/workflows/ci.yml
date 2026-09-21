@@ -42,8 +42,8 @@ jobs:
           go-version: "1.25.x"
       - name: Check Go formatting
         run: |
-          gofmt -w cmd/reactoracle-agent/main.go cmd/reactoracle-agent/main_test.go
-          git diff --exit-code -- cmd/reactoracle-agent/main.go cmd/reactoracle-agent/main_test.go
+          unformatted="$(gofmt -l cmd/reactoracle-agent/main.go cmd/reactoracle-agent/main_test.go)"
+          test -z "$unformatted" || { echo "gofmt required:"; echo "$unformatted"; exit 1; }
       - run: go vet ./...
       - run: go test ./...
       - name: Build ARM64 bundle
