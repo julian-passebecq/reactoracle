@@ -1,5 +1,7 @@
 import { Button, Card, Text, Title3 } from "@fluentui/react-components";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { PageHeader } from "../components/PageHeader";
+import { runtimeConfig } from "../config";
 
 const dashboards = [
   ["Oracle VM", "CPU, memory, disk, network, uptime and free-tier guardrails"],
@@ -11,7 +13,7 @@ const dashboards = [
 
 export function MonitoringPage() {
   return <>
-    <PageHeader title="Monitoring" subtitle="React summaries for daily use; Grafana for deep observability" actions={<Button appearance="primary">Open Grafana</Button>} />
+    <PageHeader title="Monitoring" subtitle="React summaries for daily use; Grafana for deep observability" actions={<ExternalLinkButton href={runtimeConfig.grafanaUrl} appearance="primary">Open Grafana</ExternalLinkButton>} />
     <div className="platformGrid">{dashboards.map(([name,detail]) => <Card key={name} className="platformCard"><Title3>{name}</Title3><Text className="muted">{detail}</Text><div className="grafanaPlaceholder">Grafana dashboard adapter</div><Button>Open dashboard</Button></Card>)}</div>
   </>;
 }
