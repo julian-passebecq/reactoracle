@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+RBAC_FILE="${REACTORACLE_RBAC_FILE:-$ROOT/kubernetes/system/reactoracle-agent-rbac.yaml}"
+if [[ ! -f "$RBAC_FILE" && -f "$SCRIPT_DIR/reactoracle-agent-rbac.yaml" ]]; then
+  RBAC_FILE="$SCRIPT_DIR/reactoracle-agent-rbac.yaml"
+fi
 KUBECONFIG_OUT=/etc/reactoracle/agent.kubeconfig
 CA_OUT=/etc/reactoracle/agent-ca.crt
 
@@ -15,7 +20,12 @@ if ! command -v kubectl >/dev/null 2>&1; then
   KUBECTL="k3s kubectl"
 fi
 
-$KUBECTL apply -f "$ROOT/kubernetes/system/reactoracle-agent-rbac.yaml"
+if [[ ! -f "$RBAC_FILE" ]]; then
+  echo "Cannot find reactoracle-agent-rbac.yaml" >&2
+  exit 1
+fi
+
+$KUBECTL apply -f "$RBAC_FILE"
 
 for _ in $(seq 1 30); do
   token_b64="$($KUBECTL -n reactoracle-system get secret reactoracle-agent-token -o jsonpath='{.data.token}' 2>/dev/null || true)"
