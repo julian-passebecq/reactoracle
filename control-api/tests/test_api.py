@@ -382,8 +382,14 @@ def test_platform_architecture_contract() -> None:
     assert nodes["airflow"]["location"] == "Oracle K3s"
 
     known_ids = set(nodes)
+    assert set(body["deliveryFlow"]).issubset(known_ids)
+    assert set(body["controlFlow"]).issubset(known_ids)
     assert set(body["engineeringFlow"]).issubset(known_ids)
     assert set(body["mlEnrichmentFlow"]).issubset(known_ids)
+
+    assert body["deliveryFlow"][0] == "github"
+    assert body["controlFlow"][0] == "reactoracle"
+    assert body["controlFlow"][-1] == "oracle-vm"
 
     gold_zone = next(zone for zone in body["durableZones"] if zone["name"] == "Gold")
     assert gold_zone["owner"] == "MotherDuck / DuckLake"
