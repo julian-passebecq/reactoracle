@@ -1,6 +1,6 @@
 import { Badge, Card, Text, Title2, Title3 } from "@fluentui/react-components";
 import { PageHeader } from "../components/PageHeader";
-import { architectureNodes, durableDataZones, primaryDataFlow, type ArchitectureNode, type ArchitectureState } from "../data/architecture";
+import { architectureNodes, durableDataZones, engineeringFlow, mlEnrichmentFlow, type ArchitectureNode, type ArchitectureState } from "../data/architecture";
 
 const stateAppearance: Record<ArchitectureState, { color: "success" | "informative" | "warning" | "subtle"; label: string }> = {
   live: { color: "success", label: "Live" },
@@ -47,6 +47,26 @@ function FlowNode({ node }: { node: ArchitectureNode }) {
   );
 }
 
+function FlowLane({ ids, label }: { ids: string[]; label: string }) {
+  return (
+    <div className="architectureLane">
+      <Text size={200} weight="semibold" className="architectureLaneLabel">{label}</Text>
+      <div className="megaFlow">
+        {ids.map((id, index) => {
+          const node = nodeById.get(id);
+          if (!node) return null;
+          return (
+            <div className="megaFlowStep" key={label + "-" + id + "-" + index}>
+              <FlowNode node={node} />
+              {index < ids.length - 1 ? <div className="megaFlowArrow" aria-hidden="true">→</div> : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ArchitecturePage() {
   const sourceNodes = architectureNodes.filter((node) => node.layer === "source");
   const externalNodes = architectureNodes.filter((node) => ["delivery", "observability", "control"].includes(node.layer));
@@ -74,21 +94,13 @@ export function ArchitecturePage() {
         <div className="sectionHeader">
           <div>
             <Title3>Canonical end-to-end flow</Title3>
-            <Text className="muted">The generator and ML stages are optional. Gold is the durable serving boundary.</Text>
+            <Text className="muted">The generator is optional, and ML is a branch after features. Gold can be served without Kaggle or Neon.</Text>
           </div>
         </div>
 
-        <div className="megaFlow" aria-label="Canonical data platform flow">
-          {primaryDataFlow.map((id, index) => {
-            const node = nodeById.get(id);
-            if (!node) return null;
-            return (
-              <div className="megaFlowStep" key={id + "-" + index}>
-                <FlowNode node={node} />
-                {index < primaryDataFlow.length - 1 ? <div className="megaFlowArrow" aria-hidden="true">→</div> : null}
-              </div>
-            );
-          })}
+        <div className="architectureLanes" aria-label="Canonical data platform flows">
+          <FlowLane ids={engineeringFlow} label="Core data engineering → Gold" />
+          <FlowLane ids={mlEnrichmentFlow} label="Optional ML enrichment → Gold history / compact serving state" />
         </div>
       </section>
 
