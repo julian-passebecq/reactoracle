@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import type { LogQueryInput } from "../domain/types";
 import { controlPlane } from "./controlPlane";
 
 export function useOverview() {
@@ -44,5 +45,12 @@ export function useRecentCommands() {
     queryKey: ["commands", "recent"],
     queryFn: () => controlPlane.getRecentCommands(),
     refetchInterval: 5000,
+  });
+}
+
+
+export function useLogQueryMutation() {
+  return useMutation({
+    mutationFn: (input: LogQueryInput) => controlPlane.runLogQuery(input),
   });
 }
