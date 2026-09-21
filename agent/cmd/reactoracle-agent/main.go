@@ -387,8 +387,7 @@ func collectKubernetes(ctx context.Context) ([]Workload, []NamespaceSummary, boo
 }
 
 func readWorkloads(ctx context.Context) ([]Workload, error) {
-	cmd := exec.CommandContext(ctx, "kubectl", "get", "deployments,statefulsets,daemonsets,jobs", "-A", "-o", "json")
-	data, err := cmd.Output()
+	data, err := kubectlJSON(ctx, "get", "deployments,statefulsets,daemonsets,jobs", "-A", "-o", "json")
 	if err != nil { return nil, err }
 	var list kubeList
 	if err := json.Unmarshal(data, &list); err != nil { return nil, err }
@@ -424,8 +423,7 @@ func workloadStatus(item kubeItem) string {
 }
 
 func readNamespaces(ctx context.Context) ([]NamespaceSummary, error) {
-	cmd := exec.CommandContext(ctx, "kubectl", "get", "pods", "-A", "-o", "json")
-	data, err := cmd.Output()
+	data, err := kubectlJSON(ctx, "get", "pods", "-A", "-o", "json")
 	if err != nil { return nil, err }
 	var pods podList
 	if err := json.Unmarshal(data, &pods); err != nil { return nil, err }
