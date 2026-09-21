@@ -96,3 +96,12 @@ export function useProviderInventory() {
     staleTime: 300_000,
   });
 }
+
+
+export function useDataFactoryPlan() {
+  return useQuery({
+    queryKey: ["data-factory-plan"],
+    queryFn: () => controlPlane.getDataFactoryPlan(),
+    staleTime: 300_000,
+  });
+}
