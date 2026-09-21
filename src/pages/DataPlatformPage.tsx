@@ -107,7 +107,14 @@ export function DataPlatformPage() {
                 <td>{table.storage} · {table.status}{table.mlDerived ? " · ML-derived" : ""}</td>
               </tr>
             ))}
-            {!goldCatalog.isLoading && (goldCatalog.data?.length ?? 0) === 0 ? (
+            {goldCatalog.isError ? (
+              <tr>
+                <td colSpan={5} className="commandFailed">
+                  Gold catalog unavailable: {goldCatalog.error instanceof Error ? goldCatalog.error.message : "unknown error"}
+                </td>
+              </tr>
+            ) : null}
+            {!goldCatalog.isLoading && !goldCatalog.isError && (goldCatalog.data?.length ?? 0) === 0 ? (
               <tr><td colSpan={5}>No Gold contracts configured.</td></tr>
             ) : null}
           </tbody>
