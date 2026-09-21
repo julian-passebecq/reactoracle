@@ -1,0 +1,28 @@
+import { Divider, Text } from "@fluentui/react-components";
+import { Activity24Regular, Apps24Regular, Cloud24Regular, DataUsage24Regular, DocumentBulletList24Regular, Pulse24Regular, Server24Regular, Settings24Regular, Wrench24Regular } from "@fluentui/react-icons";
+import { NavLink, Outlet } from "react-router-dom";
+import { StatusBadge } from "../components/StatusBadge";
+
+const nav = [
+  { to: "/", label: "Overview", icon: <Pulse24Regular />, end: true },
+  { to: "/infrastructure", label: "Infrastructure", icon: <Cloud24Regular /> },
+  { to: "/kubernetes", label: "Kubernetes", icon: <Apps24Regular /> },
+  { to: "/data-platform", label: "Data Platform", icon: <DataUsage24Regular /> },
+  { to: "/monitoring", label: "Monitoring", icon: <Server24Regular /> },
+  { to: "/logs", label: "Logs", icon: <DocumentBulletList24Regular /> },
+  { to: "/maintenance", label: "Maintenance", icon: <Wrench24Regular /> },
+  { to: "/activity", label: "Activity", icon: <Activity24Regular /> },
+  { to: "/settings", label: "Settings", icon: <Settings24Regular /> },
+];
+
+export function AppShell() {
+  return <div className="app">
+    <aside className="sidebar">
+      <div className="brand"><div className="brandMark">RO</div><div><Text weight="semibold">ReactOracle</Text><div className="muted small">Oracle data lab</div></div></div>
+      <Divider />
+      <nav aria-label="Primary navigation">{nav.map((item) => <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => "navItem " + (isActive ? "active" : "")}>{item.icon}<span>{item.label}</span></NavLink>)}</nav>
+      <div className="sidebarFooter"><StatusBadge status="healthy" /><Text size={200}>Mock control plane</Text></div>
+    </aside>
+    <main className="content"><Outlet /></main>
+  </div>;
+}
