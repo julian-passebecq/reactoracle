@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -221,7 +222,15 @@ class AgentCommand(BaseModel):
 class AgentCommandResult(BaseModel):
     status: Literal["success", "failed"]
     result: dict[str, object] | None = None
-    error: str | None = None
+    error: str | None = Field(default=None, max_length=4096)
+
+    @model_validator(mode="after")
+    def validate_result_size(self) -> "AgentCommandResult":
+        if self.result is not None:
+            encoded = json.dumps(self.result, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            if len(encoded) > 512 * 1024:
+                raise ValueError("Agent command result exceeds the 512 KiB API limit.")
+        return self
 
 
 class Capabilities(BaseModel):
