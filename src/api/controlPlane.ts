@@ -1,4 +1,4 @@
-import type { AgentStatus, CommandRun, InfrastructureSummary, MaintenanceSummary, Overview, Workload } from "../domain/types";
+import type { AgentStatus, CommandRun, InfrastructureSummary, LogQueryInput, MaintenanceSummary, Overview, Workload } from "../domain/types";
 import { overviewMock } from "../data/mock";
 import { runtimeConfig } from "../config";
 
@@ -11,6 +11,7 @@ export interface ControlPlaneClient {
   getMaintenance(): Promise<MaintenanceSummary>;
   getAgentStatus(): Promise<AgentStatus>;
   runHealthCheck(machineId: string): Promise<CommandRun>;
+  runLogQuery(input: LogQueryInput): Promise<CommandRun>;
   getCommand(commandId: string): Promise<CommandRun>;
   getRecentCommands(): Promise<CommandRun[]>;
 }
@@ -30,6 +31,7 @@ class MockControlPlaneClient implements ControlPlaneClient {
       id,
       machineId,
       command: "vm.health_check",
+      arguments: {},
       status: "running",
       risk: "safe",
       createdAt: new Date().toISOString(),
@@ -48,6 +50,54 @@ class MockControlPlaneClient implements ControlPlaneClient {
         result: { k3sReachable: true, workloadCount: overviewMock.workloads.length },
       });
     }, 700);
+    return { ...run };
+  }
+
+  async runLogQuery(input: LogQueryInput) {
+    await delay(120);
+    const id = "mock_log_" + Date.now();
+    const run: CommandRun = {
+      id,
+      machineId: input.machineId,
+      command: "k8s.logs",
+      arguments: {
+        namespace: input.namespace,
+        name: input.name,
+        kind: input.kind,
+        tail: input.tail,
+      },
+      status: "running",
+      risk: "safe",
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+      result: null,
+      error: null,
+    };
+    this.commands.set(id, run);
+    window.setTimeout(() => {
+      const current = this.commands.get(id);
+      if (!current) return;
+      this.commands.set(id, {
+        ...current,
+        status: "success",
+        completedAt: new Date().toISOString(),
+        result: {
+          namespace: input.namespace,
+          workload: input.name,
+          kind: input.kind,
+          tail: input.tail,
+          lineCount: 4,
+          text: [
+            "2026-09-21T16:42:11Z INFO  Processing workload " + input.name,
+            "2026-09-21T16:42:13Z INFO  Kubernetes read-only log request accepted",
+            "2026-09-21T16:42:17Z INFO  Metrics and logs pipeline healthy",
+            "2026-09-21T16:42:21Z INFO  ReactOracle mock log adapter complete",
+          ].join("\n") + "\n",
+          truncated: false,
+          collectedAt: new Date().toISOString(),
+        },
+      });
+    }, 550);
     return { ...run };
   }
 
@@ -94,6 +144,21 @@ class HttpControlPlaneClient implements ControlPlaneClient {
     return this.request<CommandRun>("/api/v1/commands", {
       method: "POST",
       body: JSON.stringify({ command: "vm.health_check", machineId }),
+    });
+  }
+  runLogQuery(input: LogQueryInput) {
+    return this.request<CommandRun>("/api/v1/commands", {
+      method: "POST",
+      body: JSON.stringify({
+        command: "k8s.logs",
+        machineId: input.machineId,
+        arguments: {
+          namespace: input.namespace,
+          name: input.name,
+          kind: input.kind,
+          tail: input.tail,
+        },
+      }),
     });
   }
   getCommand(commandId: string) {
