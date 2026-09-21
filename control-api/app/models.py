@@ -301,3 +301,69 @@ class ProviderInventory(BaseModel):
         if not self.usageBarsRequireVerifiedLimits:
             raise ValueError("Provider usage bars must require verified provider limits.")
         return self
+
+
+DataFactoryStageState = Literal["planned", "live", "external", "optional"]
+
+
+class DataFactoryStage(BaseModel):
+    id: str
+    name: str
+    engine: str
+    location: str
+    state: DataFactoryStageState
+    detail: str
+
+
+class ContosoScale(BaseModel):
+    orders: int
+    customers: int
+    products: int
+    stores: int
+    days: int
+
+
+class ContosoMlPlan(BaseModel):
+    profile: str
+    positiveOutcomeRate: float
+    signalStrength: float
+    noiseLevel: float
+    target: str
+    primarySignal: str
+    optional: bool = True
+
+
+class ContosoOutputPlan(BaseModel):
+    format: Literal["Parquet"]
+    destination: Literal["MotherDuck / DuckLake"]
+    durableZones: list[str]
+
+
+class ContosoGenerationPlan(BaseModel):
+    scenario: str
+    generator: str
+    seed: int
+    optional: bool = True
+    scale: ContosoScale
+    ml: ContosoMlPlan
+    output: ContosoOutputPlan
+
+
+class DataFactoryPlan(BaseModel):
+    contoso: ContosoGenerationPlan
+    coreStages: list[DataFactoryStage]
+    mlStages: list[DataFactoryStage]
+    executionEnabled: bool = False
+    businessReactInScope: bool = False
+
+    @model_validator(mode="after")
+    def validate_boundary(self) -> "DataFactoryPlan":
+        if self.executionEnabled:
+            raise ValueError("Data Factory execution is disabled in ReactOracle V1.")
+        if self.businessReactInScope:
+            raise ValueError("Business React applications are outside the ReactOracle product boundary.")
+        if "Gold" not in self.contoso.output.durableZones:
+            raise ValueError("Data Factory output must include durable Gold.")
+        if self.contoso.output.destination != "MotherDuck / DuckLake":
+            raise ValueError("Data Factory durable destination must be MotherDuck / DuckLake.")
+        return self
