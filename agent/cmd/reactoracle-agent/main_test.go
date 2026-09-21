@@ -52,10 +52,10 @@ func TestRound1(t *testing.T) {
 
 func TestMetricParsers(t *testing.T) {
 	cpuCases := map[string]float64{
-		"250m": 250,
-		"500u": 0.5,
+		"250m":     250,
+		"500u":     0.5,
 		"1000000n": 1,
-		"1": 1000,
+		"1":        1000,
 	}
 	for raw, want := range cpuCases {
 		got, err := parseCPUToMillicores(raw)
@@ -68,8 +68,8 @@ func TestMetricParsers(t *testing.T) {
 	}
 
 	memoryCases := map[string]float64{
-		"512Mi": 512,
-		"1Gi": 1024,
+		"512Mi":  512,
+		"1Gi":    1024,
 		"1024Ki": 1,
 	}
 	for raw, want := range memoryCases {
@@ -90,10 +90,10 @@ func TestApplyPodMetricsUsesLongestWorkloadPrefix(t *testing.T) {
 	}
 	namespaces := []NamespaceSummary{{Name: "airflow"}}
 	metrics := []podMetric{{
-		Namespace: "airflow",
-		Name: "airflow-scheduler-7d94abcd-x1",
+		Namespace:     "airflow",
+		Name:          "airflow-scheduler-7d94abcd-x1",
 		CPUMillicores: 125,
-		MemoryMB: 512,
+		MemoryMB:      512,
 	}}
 	applyPodMetrics(workloads, namespaces, metrics)
 
@@ -108,7 +108,6 @@ func TestApplyPodMetricsUsesLongestWorkloadPrefix(t *testing.T) {
 	}
 }
 
-
 func TestSafeHealthCheckCommandRoundTrip(t *testing.T) {
 	var received CommandResult
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,9 +121,9 @@ func TestSafeHealthCheckCommandRoundTrip(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(AgentCommand{
-				ID: "cmd_test",
+				ID:        "cmd_test",
 				MachineID: "oracle-test",
-				Command: "vm.health_check",
+				Command:   "vm.health_check",
 			})
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/agent/commands/cmd_test/result":
 			if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
@@ -153,7 +152,6 @@ func TestSafeHealthCheckCommandRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected health result: %#v", received.Result)
 	}
 }
-
 
 func TestBuildLogCommand(t *testing.T) {
 	args, metadata, err := buildLogCommand(map[string]any{
@@ -207,7 +205,6 @@ func TestSafeKubernetesName(t *testing.T) {
 	}
 }
 
-
 func TestParseAptUpgradable(t *testing.T) {
 	input := `Listing... Done
 linux-image/noble-security 1.2 arm64 [upgradable from: 1.1]
@@ -225,10 +222,10 @@ openssl/noble-updates,noble-security 3.0 arm64 [upgradable from: 2.9]
 
 func TestParseHumanBytes(t *testing.T) {
 	cases := map[string]float64{
-		"0B":     0,
-		"500MB":  500_000_000,
-		"1.5GB":  1_500_000_000,
-		"2KB":    2_000,
+		"0B":    0,
+		"500MB": 500_000_000,
+		"1.5GB": 1_500_000_000,
+		"2KB":   2_000,
 	}
 	for raw, want := range cases {
 		got, err := parseHumanBytes(raw)
@@ -243,7 +240,6 @@ func TestParseHumanBytes(t *testing.T) {
 		t.Fatal("expected invalid size to return an error")
 	}
 }
-
 
 func TestApplyPodRestartCountsUsesLongestWorkloadPrefix(t *testing.T) {
 	workloads := []Workload{
@@ -272,7 +268,6 @@ func TestApplyPodRestartCountsUsesLongestWorkloadPrefix(t *testing.T) {
 		t.Fatalf("scheduler restarts = %d, want 4", workloads[1].Restarts)
 	}
 }
-
 
 func TestBuildRestartCommand(t *testing.T) {
 	args, metadata, err := buildRestartCommand(map[string]any{
