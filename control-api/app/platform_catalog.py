@@ -181,7 +181,7 @@ def build_platform_architecture() -> PlatformArchitecture:
         deliveryFlow=["github", "github-actions", "cloudflare", "reactoracle"],
         controlFlow=["reactoracle", "fastapi-cloud", "oracle-agent", "oracle-vm"],
         engineeringFlow=["contoso", "motherduck", "airflow", "spark", "motherduck", "bi"],
-        mlEnrichmentFlow=["motherduck", "kaggle", "motherduck", "neon"],
+        mlEnrichmentFlow=["motherduck", "kaggle", "motherduck"],
         durableZones=[
             DurableDataZone(name="Raw", owner="MotherDuck / DuckLake", purpose="Generated Parquet and ingested source data"),
             DurableDataZone(name="Bronze", owner="MotherDuck / DuckLake", purpose="Durable landed / typed data"),
