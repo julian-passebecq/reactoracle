@@ -43,6 +43,7 @@ Examples:
 k8s.restart_workload
 k8s.scale_workload
 vm.health_check
+k8s.logs
 vm.apt_refresh
 docker.inspect_images
 docker.prune_unused_images
@@ -99,3 +100,25 @@ Minimum heartbeat payload:
 ```
 
 The agent should run as a small systemd service outside K3s so that it can report when K3s itself is unhealthy.
+
+
+### Kubernetes log reads
+
+The first non-health command is a bounded read-only log operation:
+
+```json
+{
+  "command": "k8s.logs",
+  "machineId": "oracle-a1-01",
+  "arguments": {
+    "namespace": "airflow",
+    "name": "airflow-scheduler",
+    "kind": "Deployment",
+    "tail": 100
+  }
+}
+```
+
+Validation is duplicated at the Control API and agent boundaries. Allowed kinds are Deployment, StatefulSet, DaemonSet and Job. Namespace and workload names must match Kubernetes-safe lowercase names. Tail is restricted to 10-500 lines. The agent executes a fixed `kubectl logs` command and caps the response size.
+
+This preserves the outbound-only design while giving the React UI a useful live log viewer before Loki/Grafana integration is complete.
