@@ -91,3 +91,59 @@ def build_mock_overview() -> Overview:
             ActivityEvent(id="a4", when="12:20", actor="airflow", action="dbt build completed", status="success"),
         ],
     )
+
+
+
+def build_live_overview_template() -> Overview:
+    """Neutral live-mode template populated by the first authenticated agent snapshot."""
+    maintenance = MaintenanceSummary(
+        os="Unknown",
+        kernel="Unknown",
+        updatesAvailable=0,
+        securityUpdates=0,
+        rebootRequired=False,
+        unusedImagesGb=0,
+        prometheusGb=0,
+        lokiGb=0,
+        lastBackup="Not connected",
+        backupStatus="unknown",
+    )
+    return Overview(
+        vm=VmSummary(
+            id="unconnected",
+            name="Waiting for Oracle agent",
+            shape="Unknown",
+            ocpu=1,
+            memoryGb=1,
+            cpuPercent=0,
+            memoryUsedGb=0,
+            diskPercent=0,
+            uptime="Unknown",
+            projectedCost="Not connected",
+            k3sVersion="Unknown",
+        ),
+        services=[
+            ServiceSummary(id="k3s", name="K3s", category="platform", status="warning", detail="waiting for agent snapshot"),
+            ServiceSummary(id="airflow", name="Airflow", category="data", status="warning", detail="waiting for agent snapshot"),
+            ServiceSummary(id="spark", name="Spark", category="data", status="idle", detail="waiting for agent snapshot"),
+            ServiceSummary(id="grafana", name="Grafana", category="monitoring", status="warning", detail="waiting for agent snapshot"),
+            ServiceSummary(id="prometheus", name="Prometheus", category="monitoring", status="warning", detail="waiting for agent snapshot"),
+            ServiceSummary(id="loki", name="Loki", category="monitoring", status="warning", detail="waiting for agent snapshot"),
+            ServiceSummary(id="kafka", name="Kafka", category="external", status="offline", detail="provider adapter not connected"),
+        ],
+        workloads=[],
+        namespaces=[],
+        infrastructure=InfrastructureSummary(
+            state="unknown",
+            managedResources=0,
+            lastPlan="Not connected",
+            drift="OpenTofu adapter not connected",
+            publicIp="Not connected",
+            bootVolumeGb=0,
+            vcn="Not connected",
+            subnet="Not connected",
+            tofuRuns=[],
+        ),
+        maintenance=maintenance,
+        activity=[],
+    )
