@@ -363,25 +363,13 @@ class DataFactoryStage(BaseModel):
     detail: str
 
 
-class ContosoScale(BaseModel):
-    orders: int = Field(gt=0)
-    customers: int = Field(gt=0)
-    products: int = Field(gt=0)
-    stores: int = Field(gt=0)
-    days: int = Field(gt=0)
+class SyntheticSourceScale(BaseModel):
+    samples: int = Field(gt=0)
+    samplePeriodSeconds: int = Field(gt=0)
+    durationSeconds: int = Field(gt=0)
 
 
-class ContosoMlPlan(BaseModel):
-    profile: str
-    positiveOutcomeRate: float = Field(ge=0, le=1)
-    signalStrength: float = Field(ge=0, le=1)
-    noiseLevel: float = Field(ge=0, le=1)
-    target: str
-    primarySignal: str
-    optional: bool = True
-
-
-class ContosoOutputPlan(BaseModel):
+class SyntheticSourceOutputPlan(BaseModel):
     format: Literal["Parquet"]
     destination: Literal["MotherDuck / DuckLake"]
     durableZones: list[str]
@@ -396,18 +384,22 @@ class ContosoOutputPlan(BaseModel):
         return value
 
 
-class ContosoGenerationPlan(BaseModel):
+class SyntheticSourcePlan(BaseModel):
     scenario: str
     generator: str
     seed: int
-    optional: bool = True
-    scale: ContosoScale
-    ml: ContosoMlPlan
-    output: ContosoOutputPlan
+    optional: bool = False
+    technology: Literal["WIND"]
+    machineId: str
+    machineRevision: str
+    classification: Literal["SYNTHETIC"]
+    modelId: str
+    scale: SyntheticSourceScale
+    output: SyntheticSourceOutputPlan
 
 
 class DataFactoryPlan(BaseModel):
-    contoso: ContosoGenerationPlan
+    source: SyntheticSourcePlan
     coreStages: list[DataFactoryStage]
     mlStages: list[DataFactoryStage]
     executionEnabled: bool = False
@@ -419,8 +411,8 @@ class DataFactoryPlan(BaseModel):
             raise ValueError("Data Factory execution is disabled in ReactOracle V1.")
         if self.businessReactInScope:
             raise ValueError("Business React applications are outside the ReactOracle product boundary.")
-        if "Gold" not in self.contoso.output.durableZones:
+        if "Gold" not in self.source.output.durableZones:
             raise ValueError("Data Factory output must include durable Gold.")
-        if self.contoso.output.destination != "MotherDuck / DuckLake":
+        if self.source.output.destination != "MotherDuck / DuckLake":
             raise ValueError("Data Factory durable destination must be MotherDuck / DuckLake.")
         return self
