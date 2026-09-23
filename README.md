@@ -28,7 +28,7 @@ Oracle A1 VM
         |
         +-- K3s
         |   +-- Airflow
-        |   +-- Spark jobs / Spark History Server
+        |   +-- Airflow task pods: Polars + DuckDB
         |   +-- Grafana
         |   +-- Prometheus
         |   +-- Loki
@@ -36,9 +36,9 @@ Oracle A1 VM
         +-- Docker for build/test work when useful
 ```
 
-External services such as managed Kafka, FastAPI application workloads, MotherDuck and Neon stay outside the VM.
+External services such as MotherDuck/DuckLake, Neon, Fabric and Databricks stay outside the VM.
 
-The target data architecture treats **Oracle as compute** and **MotherDuck / DuckLake as durable analytical storage**. Raw, Bronze, Silver, Gold and feature tables should survive Oracle VM shutdown/rebuild. ReactOracle stops at the Gold serving boundary; business-specific React dashboards are intentionally out of scope.
+The target data architecture treats **Oracle as compute/orchestration** and **MotherDuck / DuckLake as durable analytical storage**. Airflow orchestrates Polars + DuckDB tasks; Spark is intentionally not part of the Oracle runtime. OCI Object Storage is the planned immutable raw/archive layer. Bronze, Silver and Gold live together in the MotherDuck/DuckLake analytical plane.
 
 OpenTofu manages OCI infrastructure through CI rather than running as a permanent service on the VM.
 
@@ -96,7 +96,6 @@ VITE_CONTROL_API_BASE_URL=https://your-control-api.example.com
 VITE_GRAFANA_URL=
 VITE_HEADLAMP_URL=
 VITE_AIRFLOW_URL=
-VITE_SPARK_HISTORY_URL=
 ```
 
 ## Control API
@@ -156,5 +155,6 @@ See:
 - `docs/MONITORING.md`
 - `docs/DATA_FACTORY_ROADMAP.md`
 - `docs/GOLD_SERVING.md`
+- `pipelines/README.md`
 - `agent/README.md`
 - `kubernetes/README.md`
