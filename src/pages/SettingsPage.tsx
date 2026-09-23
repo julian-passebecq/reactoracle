@@ -18,7 +18,6 @@ export function SettingsPage() {
         <div><dt>Grafana</dt><dd>{displayUrl(runtimeConfig.grafanaUrl)}</dd></div>
         <div><dt>Headlamp</dt><dd>{displayUrl(runtimeConfig.headlampUrl)}</dd></div>
         <div><dt>Airflow</dt><dd>{displayUrl(runtimeConfig.airflowUrl)}</dd></div>
-        <div><dt>Spark history</dt><dd>{displayUrl(runtimeConfig.sparkHistoryUrl)}</dd></div>
       </dl></Card>
     </section>
   </>;
