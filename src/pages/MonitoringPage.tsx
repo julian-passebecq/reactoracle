@@ -34,8 +34,8 @@ const dashboards = [
     href: "",
   },
   {
-    name: "Spark",
-    detail: "Applications, executors, stages, memory and shuffle",
+    name: "FOIL pipeline",
+    detail: "Airflow DAG runs, task pods, Polars/DuckDB duration and export health",
     status: "Planned",
     href: "",
   },
