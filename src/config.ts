@@ -8,5 +8,4 @@ export const runtimeConfig = {
   grafanaUrl: import.meta.env.VITE_GRAFANA_URL ?? "",
   headlampUrl: import.meta.env.VITE_HEADLAMP_URL ?? "",
   airflowUrl: import.meta.env.VITE_AIRFLOW_URL ?? "",
-  sparkHistoryUrl: import.meta.env.VITE_SPARK_HISTORY_URL ?? "",
 } as const;
