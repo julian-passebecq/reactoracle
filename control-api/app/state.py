@@ -196,11 +196,17 @@ class ControlPlaneStore:
             airflow.status = "healthy" if ns and ns.podsTotal > 0 and ns.podsReady == ns.podsTotal else "warning"
             airflow.detail = "namespace healthy" if airflow.status == "healthy" else "check airflow namespace"
 
-        spark = by_id.get("spark")
-        if spark:
-            running_jobs = [item for item in snapshot.workloads if item.namespace == "spark" and item.kind == "Job" and item.status == "Running"]
-            spark.status = "healthy" if running_jobs else "idle"
-            spark.detail = f"{len(running_jobs)} active job(s)" if running_jobs else "no active application"
+        pipeline = by_id.get("polars-duckdb")
+        if pipeline:
+            running_jobs = [
+                item
+                for item in snapshot.workloads
+                if item.kind == "Job"
+                and item.status == "Running"
+                and ("foil" in item.name or "airflow" in item.namespace)
+            ]
+            pipeline.status = "healthy" if running_jobs else "idle"
+            pipeline.detail = f"{len(running_jobs)} active task pod(s)" if running_jobs else "no active transformation task"
 
         for service_id in ("grafana", "prometheus", "loki"):
             service = by_id.get(service_id)
