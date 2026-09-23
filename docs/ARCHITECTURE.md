@@ -2,92 +2,103 @@
 
 ## Product boundary
 
-ReactOracle is a lightweight control plane for one small Oracle Cloud data-engineering server. It intentionally does not replace mature specialist products.
+ReactOracle is the lightweight control plane for the FOIL Oracle Cloud lab. Specialist tools keep their own responsibilities:
 
-- ReactOracle provides the simple daily 80% experience.
-- Grafana provides deep observability.
-- Headlamp provides advanced Kubernetes administration.
-- Airflow UI provides DAG-level operations.
-- Spark History Server provides completed Spark-job inspection.
-- VS Code + OpenTofu remain the primary infrastructure authoring workflow.
+- ReactOracle: daily control/status and architecture inventory
+- Airflow: workflow scheduling and DAG operations
+- K3s: task isolation and runtime orchestration
+- Grafana / Prometheus / Loki: observability
+- Headlamp: deeper Kubernetes administration
+- OpenTofu: OCI infrastructure-as-code through CI
+- MotherDuck / DuckLake: durable analytical plane
+
+The browser never receives OCI credentials, cluster-admin kubeconfig, SSH keys or MotherDuck tokens.
 
 ## Deployment topology
 
-Cloudflare-hosted React UI -> external Control API -> outbound-connected Oracle Ops Agent -> Oracle A1 VM.
+```text
+React UI
+  -> external FastAPI Control API
+  -> outbound Oracle Ops Agent
+  -> OCI Ampere VM
+       -> K3s
+            -> Airflow 3.3.2
+            -> KubernetesExecutor task pods
+                 -> Polars
+                 -> DuckDB
+            -> Grafana / Prometheus / Loki
+```
 
-The agent may read host/systemd/apt/storage state, the K3s Kubernetes API, and OCI instance metadata. Kafka, FastAPI application workloads, MotherDuck, Neon and similar managed services remain external.
+Fabric and Databricks are separate FOIL labs. They do not run on this VM.
 
-## Security invariants
+## Data architecture
 
-1. The browser never receives SSH keys, kubeconfig admin credentials, or OCI secrets.
-2. The agent does not implement a generic remote-shell endpoint.
-3. Commands are allow-listed domain operations such as k8s.restart_workload or vm.apt.refresh.
-4. OpenTofu plan/apply runs in CI rather than as a resident Oracle service.
-5. Destructive operations require explicit confirmation and audit records.
-6. The agent should prefer outbound connections so the VM does not need a public administration port.
+The Oracle VM is compute/orchestration, not the authoritative analytical store.
+
+```text
+FOIL WIND synthetic runtime
+        |
+        +--> OCI Object Storage
+        |      immutable raw/archive (planned)
+        |
+        v
+Airflow on K3s
+        |
+        v
+Polars validation / transformation
+        |
+        v
+DuckDB analytical SQL
+        |
+        v
+MotherDuck hosted DuckLake
+  bronze.wind_telemetry
+  silver.wind_telemetry
+  gold.wind_run_summary
+        |
+        +--> optional compact Neon serving mirror
+        +--> frozen/versioned research export -> Databricks
+        +--> selected external experiments -> Fabric
+```
+
+Bronze, Silver and Gold stay together in MotherDuck/DuckLake. Neon is not a substitute medallion store.
+
+## Evidence boundary
+
+The first executable source is deliberately `SYNTHETIC`.
+
+Current software contracts may carry source-backed project context such as the 90-degree inter-foil phase and head-only yaw architecture, but numeric power, vibration and yaw-response values remain model/synthetic proxies. They are not measured performance and cannot update Core Truth automatically.
 
 ## Workload strategy
 
-Persistent on Oracle when enabled: K3s, Airflow, Grafana, Prometheus, Loki, Spark History Server, Headlamp and the Airflow metadata database. Business analytical data is not persisted there as its canonical copy.
+Persistent on Oracle when enabled:
 
-Ephemeral Kubernetes Jobs: Spark applications, dbt, Polars and maintenance jobs.
+- K3s
+- Airflow scheduler/API/DAG processor
+- small Airflow PostgreSQL metadata database
+- Grafana / Prometheus / Loki / Alloy
+- Oracle Ops Agent
 
-External: Kafka, FastAPI application backend, MotherDuck, Neon and frontend hosting.
+Ephemeral:
 
-Future source layer: ReactOracle can optionally call a headless Contoso Forge derivative to generate deterministic synthetic Parquet plus ML ground truth. That generator is not required for normal Airflow/Spark use.
+- Airflow KubernetesExecutor task pods
+- Polars transformations
+- DuckDB analytical tasks
+- maintenance jobs
 
-The durable analytical plane is MotherDuck / DuckLake. Oracle K3s is compute and orchestration; it is not the canonical home of Raw, Bronze, Silver, Gold or feature data.
+External:
 
-The core data-engineering lineage ends at durable Gold:
+- MotherDuck/DuckLake
+- OCI Object Storage
+- Neon
+- Fabric
+- Databricks
+- frontend/control-plane hosting
 
-```text
-optional Contoso generator
-        -> Parquet + truth manifest
-        -> MotherDuck / DuckLake Raw
-        -> Airflow
-        -> Spark on K3s
-        -> MotherDuck / DuckLake Bronze / Silver / Gold / Features
-        -> BI / SQL / notebooks / read-only APIs
-```
+## Infrastructure
 
-ML is an optional enrichment branch, not a prerequisite for serving Gold:
+OpenTofu source belongs in GitHub and runs through CI. ReactOracle may display plan/apply status, but the browser does not execute `tofu apply` or hold cloud credentials.
 
-```text
-MotherDuck / DuckLake Features
-        -> Kaggle / MLJAR
-        -> historical predictions / analytical results back to DuckLake
-        -> optional compact latest-state / metadata mirror in Neon
-```
+## Deployment claims
 
-If the Oracle VM is stopped or rebuilt, durable analytical tables must remain available in the external lakehouse.
-
-V1 exposes this architecture and capability model; generator execution is a later vertical slice.
-
-## Frontend modules
-
-- Overview
-- Architecture
-- Topology
-- Infrastructure / OpenTofu
-- Kubernetes
-- Data Factory
-- Data Platform
-- Monitoring
-- Providers
-- Logs
-- Maintenance
-- Activity
-- Settings
-
-The future Data Factory / source layer is documented in `docs/DATA_FACTORY_ROADMAP.md`. The Gold serving boundary is documented in `docs/GOLD_SERVING.md`. Business-specific React dashboards are outside this repository; ReactOracle serves and exposes Gold rather than implementing the consuming application.
-
-The implementation keeps typed mock mode for local UI development and also has live adapters behind stable domain interfaces. React components do not connect directly to Kubernetes or OCI APIs.
-
-
-## Provider inventory policy
-
-ReactOracle keeps provider/free-tier inventory separate from workload telemetry.
-
-The provider page may show provider role, lifecycle state, cost intent and integration status. It must not render quota percentages from remembered or static documentation. A usage bar requires both a live provider usage adapter and a verified current limit.
-
-This keeps mutable free-tier limits from being mistaken for authoritative telemetry.
+Repository code and CI success do not prove runtime deployment. Airflow, MotherDuck, OCI archive and provider integrations stay `planned` until verified against live services.
