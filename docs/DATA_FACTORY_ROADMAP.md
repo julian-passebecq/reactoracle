@@ -1,170 +1,74 @@
-# Data Factory roadmap
+# FOIL Oracle data-pipeline roadmap
 
-ReactOracle V1 remains an infrastructure and data-platform control plane. It models the first upstream source and durable analytical layers so the complete architecture is visible before generator execution is implemented.
-
-## Canonical future source path
-
-The first synthetic source will be a small ReactOracle-specific derivative of Contoso Forge.
-
-It remains an external/headless generator with a narrow contract. ReactOracle owns the UI and orchestration.
+## Canonical V1 path
 
 ```text
-CORE DATA ENGINEERING
-
-ReactOracle
-   |
-   v
-Contoso Forge Lite (optional source)
-   |
-   | Parquet + truth/provenance
-   v
-MotherDuck / DuckLake Raw
-   |
-   v
-Airflow
-   |
-   v
-Spark on Oracle K3s
-   |
-   | validated outputs
-   v
-MotherDuck / DuckLake
-Bronze / Silver / Gold / Features
-   |
-   +--> Power BI / SQL / notebooks / APIs
-
-
-OPTIONAL ML ENRICHMENT
-
-MotherDuck / DuckLake Features
-   |
-   v
-Kaggle + MLJAR
-   |
-   +--> historical predictions -> DuckLake
-   +--> compact latest state / metrics -> optional Neon
-   +--> model artifacts -> artifact storage
+SYNTHETIC WIND telemetry
+   -> Parquet + provenance manifest
+   -> Airflow on Oracle K3s
+   -> Polars validation/transformation
+   -> DuckDB SQL
+   -> MotherDuck / DuckLake
+        Bronze -> Silver -> Gold
 ```
 
-## Why the generator is optional
+A separate OCI Object Storage path will preserve immutable raw Parquet/manifests for recovery.
 
-The Oracle VM must remain useful independently.
+## Current executable slice
 
-ReactOracle supports three conceptual source modes:
+The repository contains:
 
-1. **Generated source** — Contoso Forge Lite creates deterministic synthetic Parquet plus ML ground truth.
-2. **Existing source** — Airflow ingests an existing database, API, file set or Kafka topic.
-3. **Direct lab input** — Spark/dbt/Polars can work on an existing dataset without invoking the generator.
+- deterministic WIND telemetry generator;
+- explicit `SYNTHETIC` classification;
+- Polars quality validation;
+- DuckDB Bronze/Silver/Gold transforms;
+- `gold.wind_run_summary`;
+- Airflow DAG `foil_wind_medallion`;
+- K3s/Airflow Helm values using KubernetesExecutor;
+- local DuckDB tests and MotherDuck connection support.
 
-The generator is an additional source-system layer, not a prerequisite for Airflow, Spark or the VM.
+Live MotherDuck, K3s Airflow and OCI archive execution still require provider/runtime verification.
 
-## Contoso contract to preserve
+## Storage boundaries
 
-The minimal derivative should retain:
+**MotherDuck / DuckLake**
+- Bronze
+- Silver
+- Gold
+- optional Features
+- governed analytical history
 
-- deterministic seed
-- realistic relational retail entities
-- shipments, returns, support tickets and reviews
-- optional DE defects such as duplicates, CDC, late arrivals, SCD2 and quality issues
-- `causal-v1` ML signal controls
-- `positiveOutcomeRate`
-- `signalStrength`
-- `noiseLevel`
-- truth/provenance manifest
-- dataset fingerprint and checksums
-- CSV and Parquet output
-- Linux/ARM64 headless execution if practical
+**OCI Object Storage**
+- immutable raw/archive files
+- manifests/checksums
+- recovery artifacts
 
-ReactOracle should never require the old WPF UI.
+**Neon**
+- compact run/result index
+- selected Gold serving rows
+- application-oriented relational queries
 
-## Durable data ownership
+**MongoDB**
+- FOIL engineering/project truth
+- provenance
+- observations/decisions
+- not raw telemetry
 
-The Oracle VM is compute, not the durable business-data store.
+## External labs
 
-The canonical durable analytical zones are:
+Fabric remains the Microsoft-oriented real-time/Data Factory/OneLake/notebook lab.
 
-```text
-MotherDuck / DuckLake
-  Raw
-  Bronze
-  Silver
-  Gold
-  Features
-```
+Databricks remains the frozen-snapshot research path for Monte Carlo, PySpark, ML and MLflow.
 
-Stopping or rebuilding the Oracle VM must not remove these tables.
+The Oracle pipeline should not duplicate these responsibilities merely to use another tool.
 
-Spark may use temporary/local files while a job is running, but pipeline completion should publish the canonical result back to the durable lakehouse.
+## Next implementation slices
 
-## Optional Neon role
-
-Neon is no longer the canonical Contoso source or Gold store.
-
-Use it only when a scenario benefits from PostgreSQL semantics or small low-latency serving state, for example:
-
-- a dedicated exercise simulating a PostgreSQL operational source;
-- ReactOracle operational metadata;
-- ML experiment metadata;
-- compact latest-prediction / serving tables;
-- model registry metadata.
-
-Do not force large generated, Bronze, Silver or Gold datasets through PostgreSQL.
-
-## Gold serving boundary
-
-ReactOracle does not build business-specific React dashboards.
-
-The platform responsibility ends at a stable Gold interface:
-
-```text
-MotherDuck / DuckLake Gold
-        |
-        +--> Power BI
-        +--> SQL clients
-        +--> notebooks
-        +--> read-only APIs
-```
-
-A future business application may consume those interfaces, but that application is outside ReactOracle scope.
-
-## V1 boundary
-
-V1 should display:
-
-- Contoso Forge as a planned optional source;
-- MotherDuck / DuckLake as the planned durable analytical layer;
-- Raw -> Bronze -> Silver -> Gold -> Features;
-- Airflow -> Spark compute on Oracle K3s;
-- Kaggle / MLJAR as planned external ML compute;
-- optional Neon serving/metadata role;
-- Gold as the final platform serving boundary;
-- capability state such as `planned`, `external`, `optional` and `live`.
-
-V1 should not yet:
-
-- run the C# generator;
-- provision MotherDuck automatically;
-- upload generated datasets;
-- trigger Kaggle training;
-- implement a business dashboard;
-- treat the generator as a requirement for normal VM use.
-
-## V2 vertical slice
-
-The first executable journey should remain intentionally small:
-
-1. submit a Contoso generation spec;
-2. run the generator;
-3. validate manifest and fingerprints;
-4. publish generated Parquet into the durable lakehouse;
-5. start an Airflow DAG;
-6. use Spark for Bronze/Silver/Gold/feature engineering;
-7. publish validated outputs back to MotherDuck / DuckLake;
-8. create a bounded ML feature package;
-9. submit Kaggle / MLJAR;
-10. import metrics and predictions;
-11. retain historical analytical outputs in the lakehouse;
-12. optionally publish compact serving metadata to Neon;
-13. expose Gold tables to BI / SQL consumers.
-
-This becomes ReactOracle's canonical end-to-end case while the VM remains usable for unrelated Spark/Airflow/dbt/Polars work.
+1. build/publish the ARM64-capable Airflow task image;
+2. deploy Airflow Helm release to the OCI K3s host;
+3. create/verify MotherDuck DuckLake and token;
+4. run `foil_wind_medallion` end to end;
+5. archive raw Parquet + manifest to OCI Object Storage;
+6. publish a compact Gold run index to Neon;
+7. expose verified pipeline/run state in ReactOracle;
+8. replace or supplement the synthetic source with timestamped live Oracle telemetry only when a measured-data contract exists.
