@@ -1,47 +1,43 @@
 # Deployment sequence
 
-ReactOracle is designed so the existing Oracle VM can be adopted incrementally. Do not destroy or recreate the VM just to install ReactOracle.
+ReactOracle adopts the existing Oracle A1 VM incrementally. Source code and CI success do not prove a live deployment.
 
 ## 1. Oracle host
 
 Keep the existing Oracle A1 instance.
 
-Install the host prerequisites:
+Host prerequisites:
 
-```text
-Ubuntu
-K3s
-Docker (optional for image build/test)
-Cockpit (optional host administration)
-```
+- Ubuntu
+- K3s
+- Helm
+- kubectl
+- Docker only when useful for local image build/test
 
-K3s is the persistent workload runtime. Docker is not required by K3s.
+K3s is the persistent workload runtime.
 
-## 2. K3s workload namespaces
+## 2. K3s namespaces
 
-Recommended logical boundaries:
+Recommended boundaries:
 
 ```text
 kube-system
 reactoracle-system
 monitoring
 airflow
-spark
 jobs
 ```
 
-The `jobs` namespace is intended for short-lived dbt, Polars and maintenance jobs.
-
-Managed Kafka remains external.
+Airflow uses KubernetesExecutor. Data tasks are ephemeral pods; there is no Spark namespace.
 
 ## 3. Control API
 
 Deploy `control-api/` outside the Oracle VM.
 
-Required environment variable:
+Required:
 
 ```text
-REACTORACLE_AGENT_TOKEN=<long random secret>
+REACTORACLE_AGENT_TOKEN=<long-random-secret>
 ```
 
 Optional:
@@ -51,117 +47,101 @@ REACTORACLE_ALLOWED_ORIGINS=https://your-react-frontend.example.com
 REACTORACLE_ENABLE_MUTATIONS=false
 ```
 
-The raw Control API should not be exposed as an unauthenticated public administration endpoint. Put the user-facing surface behind the chosen access/authentication layer.
+Do not expose an unauthenticated administration API.
 
 ## 4. Oracle agent
 
-Download the `reactoracle-agent-linux-arm64` artifact produced by CI, or build it manually.
-
-On the VM:
+Install the ARM64 agent artifact produced by CI, or build it manually.
 
 ```bash
-tar/unzip the artifact as appropriate
-sudo ./install.sh
-sudo ./configure-kube-access.sh
-sudo nano /etc/reactoracle/agent.env
+sudo ./agent/install.sh
+sudo ./agent/configure-kube-access.sh
 sudo systemctl start reactoracle-agent
 sudo systemctl status reactoracle-agent
 ```
 
-The agent configuration needs the same secret as the Control API:
+Configure:
 
 ```text
 REACTORACLE_CONTROL_API_URL=https://your-control-api.example.com
-REACTORACLE_AGENT_TOKEN=<same secret>
+REACTORACLE_AGENT_TOKEN=<same-secret>
 REACTORACLE_INTERVAL_SECONDS=30
 ```
 
-The agent is outbound-only. No new public VM administration port is required.
+The agent is outbound-only.
 
 ## 5. Frontend
 
 Host the Vite build outside Oracle.
-
-Set:
 
 ```text
 VITE_CONTROL_API_BASE_URL=https://your-control-api.example.com
 VITE_GRAFANA_URL=https://...
 VITE_HEADLAMP_URL=https://...
 VITE_AIRFLOW_URL=https://...
-VITE_SPARK_HISTORY_URL=https://...
 ```
 
-If `VITE_CONTROL_API_BASE_URL` is empty, ReactOracle intentionally falls back to mock mode.
+If `VITE_CONTROL_API_BASE_URL` is empty, ReactOracle intentionally runs in mock mode.
 
 ## 6. Monitoring
 
-The target monitoring stack on K3s is:
+K3s observability:
 
 ```text
 Prometheus -> metrics
 Loki       -> logs
 Grafana    -> deep dashboards
+Alloy      -> log collection
 ```
 
-ReactOracle owns the concise operational summaries and navigation. Grafana remains the deep observability surface.
+ReactOracle owns concise operational summaries; Grafana remains the deeper investigation surface.
 
-## 7. Data workloads
+## 7. Airflow and analytical pipeline
 
-Persistent:
-
-- Airflow
-- Spark History Server
-- monitoring components
-
-On demand:
-
-- Spark applications
-- dbt
-- Polars
-
-External:
-
-- Kafka
-- FastAPI application workloads
-- MotherDuck / Neon when used
-
-## 8. OpenTofu
-
-OpenTofu should be edited in VS Code and executed through CI.
-
-Do not install a permanent Terraform/OpenTofu service on the Oracle VM.
-
-The existing Oracle VM should be imported/adopted later rather than destroyed and recreated.
-
-## First live acceptance checks
-
-The first live connection is successful when:
-
-1. `GET /api/v1/health` returns OK.
-2. the Oracle agent appears connected in ReactOracle.
-3. VM shape/OCPU/RAM come from OCI metadata.
-4. CPU/RAM/disk/uptime change from mock values.
-5. K3s namespaces and workloads match the actual VM.
-6. the dedicated agent kubeconfig can list pods.
-7. the dedicated agent kubeconfig cannot delete pods.
-8. no new inbound Oracle management port has been opened.
-
-
-## Optional controlled restarts
-
-ReactOracle ships with mutating operations disabled. Keep them disabled until the user-facing Control API is behind the intended authentication layer.
-
-When you intentionally enable workload restarts:
+The accepted Oracle data path is:
 
 ```text
-REACTORACLE_ENABLE_MUTATIONS=true
+Airflow / KubernetesExecutor
+        -> Polars
+        -> DuckDB
+        -> MotherDuck / DuckLake Bronze/Silver/Gold
 ```
 
-and apply the separate restart RBAC overlay:
+Raw Parquet/manifests are planned for OCI Object Storage archive. Neon is an optional compact serving/index database.
+
+Deploy Airflow only after the task image exists:
 
 ```bash
-kubectl apply -f kubernetes/system/reactoracle-agent-restart-rbac.yaml
+docker build -t ghcr.io/julian-passebecq/reactoracle-airflow:0.1.0 pipelines/
+# publish through an explicit release workflow
+export MOTHERDUCK_TOKEN='...'
+bash kubernetes/airflow/install.sh
 ```
 
-The React UI reads `GET /api/v1/capabilities` and only renders restart controls when the API reports the capability enabled.
+Do not claim this runtime is deployed until the Helm release, MotherDuck database and DAG run are verified.
+
+## 8. External FOIL labs
+
+- Microsoft Fabric: separate real-time / Data Factory / OneLake / notebook lab.
+- Databricks: separate frozen-snapshot Monte Carlo / PySpark / ML / MLflow lab.
+
+They consume explicit governed inputs and do not replace the Oracle pipeline or Core Truth.
+
+## 9. OpenTofu
+
+OpenTofu is authored in GitHub/VS Code and executed through CI. ReactOracle may display plan/apply state, but the browser does not hold OCI credentials or execute `tofu apply` directly.
+
+The existing Oracle VM should be adopted/imported rather than destroyed merely to demonstrate IaC.
+
+## First live acceptance gates
+
+1. Control API health succeeds.
+2. Oracle agent is authenticated and connected.
+3. host telemetry comes from the real VM.
+4. K3s workload/namespace inventory matches the VM.
+5. monitoring dashboards are reachable through the intended access path.
+6. the Airflow Helm release is healthy.
+7. `foil_wind_medallion` completes.
+8. MotherDuck contains the expected Bronze/Silver/Gold tables.
+9. all generated Wind performance fields remain labelled `SYNTHETIC`.
+10. no unplanned public administration port is opened.
