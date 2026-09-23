@@ -507,7 +507,8 @@ def test_platform_architecture_contract() -> None:
     nodes = {node["id"]: node for node in body["nodes"]}
     assert nodes["motherduck"]["durable"] is True
     assert nodes["motherduck"]["layer"] == "lakehouse"
-    assert nodes["spark"]["durable"] is False
+    assert "spark" not in nodes
+    assert nodes["polars-duckdb"]["durable"] is False
     assert nodes["airflow"]["location"] == "Oracle K3s"
 
     known_ids = set(nodes)
@@ -523,16 +524,14 @@ def test_platform_architecture_contract() -> None:
     gold_zone = next(zone for zone in body["durableZones"] if zone["name"] == "Gold")
     assert gold_zone["owner"] == "MotherDuck / DuckLake"
 
-    # Core Gold serving must not depend on Kaggle or Neon.
-    assert "kaggle" not in body["engineeringFlow"]
+    # Core Gold serving must not depend on Neon, Fabric or Databricks.
     assert "neon" not in body["engineeringFlow"]
+    assert "fabric" not in body["engineeringFlow"]
+    assert "databricks" not in body["engineeringFlow"]
     assert "bi" in body["engineeringFlow"]
 
-    # ML is explicitly a side branch that returns analytical history to the lakehouse.
-    assert body["mlEnrichmentFlow"][0] == "motherduck"
-    assert "kaggle" in body["mlEnrichmentFlow"]
-    assert body["mlEnrichmentFlow"].count("motherduck") == 2
-    assert "neon" not in body["mlEnrichmentFlow"]
+    # Databricks is a separate research branch that returns only governed derived outputs.
+    assert body["mlEnrichmentFlow"] == ["motherduck", "databricks", "motherduck"]
 
 
 def test_gold_catalog_is_durable_and_namespaced() -> None:
@@ -546,11 +545,10 @@ def test_gold_catalog_is_durable_and_namespaced() -> None:
     assert all(row["storage"] == "MotherDuck / DuckLake" for row in rows)
 
     base_tables = [row for row in rows if not row["mlDerived"]]
-    assert len(base_tables) >= 4
+    assert len(base_tables) == 3
     assert all(row["status"] == "planned" for row in rows)
-
-    score_table = next(row for row in rows if row["name"] == "gold.customer_scores")
-    assert score_table["mlDerived"] is True
+    assert "gold.wind_run_summary" in names
+    assert all(row["mlDerived"] is False for row in rows)
 
 
 def test_provider_inventory_avoids_unverified_quota_claims() -> None:
@@ -578,11 +576,11 @@ def test_provider_inventory_avoids_unverified_quota_claims() -> None:
     assert motherduck["category"] == "lakehouse"
     assert motherduck["state"] == "planned"
 
-    kaggle = next(provider for provider in providers if provider["id"] == "kaggle")
-    assert kaggle["category"] == "ml"
+    databricks = next(provider for provider in providers if provider["id"] == "databricks")
+    assert databricks["category"] == "lab"
 
-    colab = next(provider for provider in providers if provider["id"] == "colab")
-    assert colab["state"] == "optional"
+    fabric = next(provider for provider in providers if provider["id"] == "fabric")
+    assert fabric["state"] == "external"
 
 
 def test_k8s_logs_rejects_extra_arguments() -> None:
@@ -747,17 +745,20 @@ def test_data_factory_plan_contract() -> None:
 
     assert body["executionEnabled"] is False
     assert body["businessReactInScope"] is False
-    assert body["contoso"]["optional"] is True
+    assert body["contoso"]["optional"] is False
+    assert body["contoso"]["scenario"] == "foil.wind.synthetic_runtime"
+    assert body["contoso"]["generator"] == "FOIL WIND Synthetic Source"
     assert body["contoso"]["output"]["format"] == "Parquet"
     assert body["contoso"]["output"]["destination"] == "MotherDuck / DuckLake"
-    assert "Gold" in body["contoso"]["output"]["durableZones"]
+    assert body["contoso"]["output"]["durableZones"] == ["Bronze", "Silver", "Gold"]
 
     core_ids = [stage["id"] for stage in body["coreStages"]]
     assert core_ids == ["generate", "lake-raw", "orchestrate", "process", "publish", "consume"]
 
     ml_ids = [stage["id"] for stage in body["mlStages"]]
     assert ml_ids == ["features", "train", "publish-ml", "serve-ml"]
-    assert next(stage for stage in body["mlStages"] if stage["id"] == "train")["location"] == "Kaggle"
+    assert next(stage for stage in body["coreStages"] if stage["id"] == "process")["engine"] == "Polars + DuckDB"
+    assert next(stage for stage in body["mlStages"] if stage["id"] == "train")["location"] == "Databricks"
 
 
 def test_data_factory_plan_rejects_v1_execution() -> None:
