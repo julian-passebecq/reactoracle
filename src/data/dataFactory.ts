@@ -1,30 +1,24 @@
-import type { ContosoGenerationPlan, DataFactoryPlan, DataFactoryStage } from "../domain/types";
+import type { DataFactoryPlan, DataFactoryStage, SyntheticSourcePlan } from "../domain/types";
 
-export const contosoPlan: ContosoGenerationPlan = {
+export const syntheticSourcePlan: SyntheticSourcePlan = {
   scenario: "foil.wind.synthetic_runtime",
   generator: "FOIL WIND Synthetic Source",
-  seed: 20260904,
-  optional: true,
+  seed: 20260922,
+  optional: false,
+  technology: "WIND",
+  machineId: "MACHINE-WIND-001",
+  machineRevision: "2026-09-21.2",
+  classification: "SYNTHETIC",
+  modelId: "synthetic-wind-proxy-v1",
   scale: {
-    orders: 300,
-    customers: 1,
-    products: 1,
-    stores: 1,
-    days: 1,
-  },
-  ml: {
-    profile: "synthetic-wind-proxy-v1",
-    positiveOutcomeRate: 0.1,
-    signalStrength: 0.5,
-    noiseLevel: 0.1,
-    target: "runtime quality and scenario summaries",
-    primarySignal: "wind speed + yaw alignment proxies",
-    optional: true,
+    samples: 300,
+    samplePeriodSeconds: 1,
+    durationSeconds: 300,
   },
   output: {
     format: "Parquet",
     destination: "MotherDuck / DuckLake",
-    durableZones: ["Raw", "Bronze", "Silver", "Gold", "Features"],
+    durableZones: ["Bronze", "Silver", "Gold"],
   },
 };
 
@@ -50,7 +44,7 @@ export const coreDataFactoryStages: DataFactoryStage[] = [
     name: "Orchestrate",
     engine: "Airflow",
     location: "Oracle K3s",
-    state: "live",
+    state: "planned",
     detail: "DAG coordinates generation, Polars validation, DuckDB SQL and publication",
   },
   {
@@ -72,51 +66,50 @@ export const coreDataFactoryStages: DataFactoryStage[] = [
   {
     id: "consume",
     name: "Serve Gold",
-    engine: "SQL / BI",
+    engine: "SQL / API",
     location: "External consumers",
     state: "planned",
-    detail: "Power BI, SQL clients, notebooks and APIs consume Gold",
+    detail: "ReactOracle, SQL clients and optional Neon mirror consume compact Gold outputs",
   },
 ];
 
 export const mlDataFactoryStages: DataFactoryStage[] = [
   {
     id: "features",
-    name: "Read Features",
-    engine: "DuckLake",
+    name: "Freeze research input",
+    engine: "DuckLake / Parquet",
     location: "MotherDuck",
     state: "planned",
-    detail: "Governed ML feature dataset derived from durable analytical data",
+    detail: "Create explicit versioned/frozen dataset for research use",
   },
   {
     id: "train",
-    name: "Train",
-    engine: "MLJAR",
-    location: "Kaggle",
-    state: "planned",
-    detail: "Optional bounded external AutoML experiment",
+    name: "Research / ML",
+    engine: "PySpark / MLflow",
+    location: "Databricks",
+    state: "external",
+    detail: "Separate FOIL research lab; never overwrites Core Truth",
   },
   {
     id: "publish-ml",
-    name: "Publish ML results",
+    name: "Return approved summary",
     engine: "DuckLake",
     location: "MotherDuck",
     state: "planned",
-    detail: "Historical predictions and analytical results return to durable storage",
+    detail: "Only governed derived outputs return to the Oracle analytical plane",
   },
   {
     id: "serve-ml",
-    name: "Mirror latest state",
+    name: "Mirror compact results",
     engine: "PostgreSQL",
     location: "Optional Neon",
     state: "optional",
-    detail: "Compact latest predictions / metrics only when a serving use case needs them",
+    detail: "Compact run/result serving state only",
   },
 ];
 
-
 export const dataFactoryPlanMock: DataFactoryPlan = {
-  contoso: contosoPlan,
+  source: syntheticSourcePlan,
   coreStages: coreDataFactoryStages,
   mlStages: mlDataFactoryStages,
   executionEnabled: false,
