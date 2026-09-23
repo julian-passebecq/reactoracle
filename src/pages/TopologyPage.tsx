@@ -135,7 +135,7 @@ export function TopologyPage() {
             ) : (
               <div className="emptyState">
                 <Text weight="semibold">No active jobs</Text>
-                <Text className="muted">Spark applications, dbt and Polars should normally consume resources only while running.</Text>
+                <Text className="muted">Airflow KubernetesExecutor task pods, Polars and DuckDB should consume resources only while work is running.</Text>
               </div>
             )}
           </Card>
@@ -144,10 +144,10 @@ export function TopologyPage() {
         <section className="topologyStage">
           <Text weight="semibold" className="topologyStageLabel">External data services</Text>
           <div className="topologyExternal">
-            <Card><Title3>Kafka</Title3><Text className="muted">Managed externally</Text></Card>
-            <Card><Title3>FastAPI Cloud</Title3><Text className="muted">Application APIs</Text></Card>
-            <Card><Title3>MotherDuck / DuckLake</Title3><Text className="muted">Planned durable Raw → Gold lakehouse</Text></Card>
-            <Card><Title3>Neon</Title3><Text className="muted">Optional serving / ML metadata Postgres</Text></Card>
+            <Card><Title3>MotherDuck / DuckLake</Title3><Text className="muted">Planned durable Bronze → Gold analytical plane</Text></Card>
+            <Card><Title3>OCI Object Storage</Title3><Text className="muted">Planned immutable raw/archive</Text></Card>
+            <Card><Title3>Neon</Title3><Text className="muted">Optional compact serving Postgres</Text></Card>
+            <Card><Title3>Fabric / Databricks</Title3><Text className="muted">Separate external FOIL labs</Text></Card>
           </div>
         </section>
       </div>
