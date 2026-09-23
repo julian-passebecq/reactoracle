@@ -745,12 +745,16 @@ def test_data_factory_plan_contract() -> None:
 
     assert body["executionEnabled"] is False
     assert body["businessReactInScope"] is False
-    assert body["contoso"]["optional"] is False
-    assert body["contoso"]["scenario"] == "foil.wind.synthetic_runtime"
-    assert body["contoso"]["generator"] == "FOIL WIND Synthetic Source"
-    assert body["contoso"]["output"]["format"] == "Parquet"
-    assert body["contoso"]["output"]["destination"] == "MotherDuck / DuckLake"
-    assert body["contoso"]["output"]["durableZones"] == ["Bronze", "Silver", "Gold"]
+    assert body["source"]["optional"] is False
+    assert body["source"]["scenario"] == "foil.wind.synthetic_runtime"
+    assert body["source"]["generator"] == "FOIL WIND Synthetic Source"
+    assert body["source"]["technology"] == "WIND"
+    assert body["source"]["machineId"] == "MACHINE-WIND-001"
+    assert body["source"]["classification"] == "SYNTHETIC"
+    assert body["source"]["scale"]["samples"] == 300
+    assert body["source"]["output"]["format"] == "Parquet"
+    assert body["source"]["output"]["destination"] == "MotherDuck / DuckLake"
+    assert body["source"]["output"]["durableZones"] == ["Bronze", "Silver", "Gold"]
 
     core_ids = [stage["id"] for stage in body["coreStages"]]
     assert core_ids == ["generate", "lake-raw", "orchestrate", "process", "publish", "consume"]
@@ -762,31 +766,28 @@ def test_data_factory_plan_contract() -> None:
 
 
 def test_data_factory_plan_rejects_v1_execution() -> None:
-    from app.models import ContosoGenerationPlan, ContosoMlPlan, ContosoOutputPlan, ContosoScale, DataFactoryPlan
+    from app.models import DataFactoryPlan, SyntheticSourceOutputPlan, SyntheticSourcePlan, SyntheticSourceScale
 
-    contoso = ContosoGenerationPlan(
-        scenario="retail.customer_satisfaction",
-        generator="Contoso Forge Lite",
+    source = SyntheticSourcePlan(
+        scenario="foil.wind.synthetic_runtime",
+        generator="FOIL WIND Synthetic Source",
         seed=1,
-        scale=ContosoScale(orders=10, customers=5, products=3, stores=1, days=30),
-        ml=ContosoMlPlan(
-            profile="causal-v1",
-            positiveOutcomeRate=0.1,
-            signalStrength=0.5,
-            noiseLevel=0.1,
-            target="customer dissatisfaction",
-            primarySignal="delivery delay",
-        ),
-        output=ContosoOutputPlan(
+        technology="WIND",
+        machineId="MACHINE-WIND-001",
+        machineRevision="test",
+        classification="SYNTHETIC",
+        modelId="test-proxy",
+        scale=SyntheticSourceScale(samples=10, samplePeriodSeconds=1, durationSeconds=10),
+        output=SyntheticSourceOutputPlan(
             format="Parquet",
             destination="MotherDuck / DuckLake",
-            durableZones=["Raw", "Gold"],
+            durableZones=["Bronze", "Gold"],
         ),
     )
 
     with pytest.raises(ValidationError):
         DataFactoryPlan(
-            contoso=contoso,
+            source=source,
             coreStages=[],
             mlStages=[],
             executionEnabled=True,
@@ -996,35 +997,21 @@ def test_recent_command_limit_is_bounded() -> None:
     assert too_large.status_code == 422
 
 
-def test_data_factory_ml_parameters_are_bounded() -> None:
-    from app.models import ContosoMlPlan
+def test_data_factory_source_scale_is_positive() -> None:
+    from app.models import SyntheticSourceScale
 
-    for field, value in (
-        ("positiveOutcomeRate", 1.1),
-        ("signalStrength", -0.1),
-        ("noiseLevel", 2.0),
-    ):
-        kwargs = {
-            "profile": "causal-v1",
-            "positiveOutcomeRate": 0.1,
-            "signalStrength": 0.5,
-            "noiseLevel": 0.1,
-            "target": "customer dissatisfaction",
-            "primarySignal": "delivery delay",
-        }
-        kwargs[field] = value
-        with pytest.raises(ValidationError):
-            ContosoMlPlan(**kwargs)
+    with pytest.raises(ValidationError):
+        SyntheticSourceScale(samples=0, samplePeriodSeconds=1, durationSeconds=10)
 
 
 def test_data_factory_output_rejects_duplicate_durable_zones() -> None:
-    from app.models import ContosoOutputPlan
+    from app.models import SyntheticSourceOutputPlan
 
     with pytest.raises(ValidationError):
-        ContosoOutputPlan(
+        SyntheticSourceOutputPlan(
             format="Parquet",
             destination="MotherDuck / DuckLake",
-            durableZones=["Raw", "Gold", "Gold"],
+            durableZones=["Bronze", "Gold", "Gold"],
         )
 
 
