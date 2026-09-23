@@ -1,197 +1,48 @@
 # Control API contract
 
-ReactOracle separates browser UI, orchestration logic, and privileged VM operations.
+ReactOracle separates browser UI, orchestration logic and privileged VM operations.
 
-## Transport
+## Security boundary
 
-- Browser -> Control API: HTTPS.
-- Oracle agent -> Control API: outbound authenticated HTTPS/WebSocket or long polling.
-- The browser never connects directly to SSH, the Kubernetes admin API, systemd, or OCI secrets.
+- browser -> external Control API over HTTPS
+- Oracle agent -> Control API through outbound authenticated requests
+- no generic remote shell
+- no OCI, Kubernetes admin or MotherDuck credentials in the browser
+- mutations are allow-listed and audited
 
-## Read endpoints - V0.2
+## Operational reads
 
 ```text
+GET /api/v1/health
 GET /api/v1/overview
-GET /api/v1/machines
-GET /api/v1/machines/{machineId}
-GET /api/v1/k8s/namespaces
 GET /api/v1/k8s/workloads
 GET /api/v1/infrastructure
 GET /api/v1/maintenance
 GET /api/v1/activity
-GET /api/v1/logs?namespace=&workload=&window=
+GET /api/v1/agent/status
+GET /api/v1/capabilities
 ```
 
-The frontend currently expects four aggregate reads:
+Live operational reads return HTTP 503 until an authenticated Oracle-agent snapshot exists. Mock telemetry is never silently returned by the live API.
+
+## Implemented command surface
 
 ```text
-GET /api/v1/overview
-GET /api/v1/k8s/workloads
-GET /api/v1/infrastructure
-GET /api/v1/maintenance
-```
-
-These payloads must conform to the TypeScript domain contracts in `src/domain/types.ts`.
-
-## Command model - V0.3
-
-Commands are explicit domain operations. There is no generic shell endpoint.
-
-Examples:
-
-```text
-k8s.restart_workload
-k8s.scale_workload
 vm.health_check
 k8s.logs
-vm.apt_refresh
-docker.inspect_images
-docker.prune_unused_images
-spark.submit_job
-dbt.run_build
-polars.run_job
-backup.run
-tofu.validate
-tofu.plan
-tofu.apply
+k8s.restart_workload
 ```
 
-Proposed request:
+The agent builds fixed kubectl argument arrays. Browser-provided shell fragments are not executed.
 
-```json
-{
-  "command": "k8s.restart_workload",
-  "target": { "namespace": "airflow", "name": "airflow-scheduler" },
-  "requestId": "client-generated-id"
-}
-```
+Risk policy:
 
-Proposed response:
+- safe: reads, health checks, bounded logs, future OpenTofu validate/plan
+- moderate: guarded workload restart
+- dangerous: future infrastructure apply, OS update/reboot
+- destructive operations: disabled by default
 
-```json
-{
-  "commandRunId": "cmd_123",
-  "status": "queued",
-  "risk": "moderate"
-}
-```
-
-## Risk policy
-
-- Safe: read state, health checks, logs, OpenTofu validate/plan.
-- Moderate: restart a workload, submit Spark/dbt/Polars jobs, prune confirmed unused images.
-- Dangerous: OpenTofu apply, restart K3s, install OS updates, reboot the VM.
-- Destructive: delete a namespace, volume, or infrastructure. Disabled by default.
-
-Every mutation must produce an audit event with actor, command, target, result, start/end timestamps, and a correlation ID.
-
-## Agent heartbeat
-
-Minimum heartbeat payload:
-
-```json
-{
-  "agentVersion": "0.1.0",
-  "machineId": "oracle-a1-01",
-  "status": "healthy",
-  "k3sReachable": true,
-  "sentAt": "2026-09-21T17:00:00+02:00"
-}
-```
-
-The agent should run as a small systemd service outside K3s so that it can report when K3s itself is unhealthy.
-
-
-### Kubernetes log reads
-
-The first non-health command is a bounded read-only log operation:
-
-```json
-{
-  "command": "k8s.logs",
-  "machineId": "oracle-a1-01",
-  "arguments": {
-    "namespace": "airflow",
-    "name": "airflow-scheduler",
-    "kind": "Deployment",
-    "tail": 100
-  }
-}
-```
-
-Validation is duplicated at the Control API and agent boundaries. Allowed kinds are Deployment, StatefulSet, DaemonSet and Job. Namespace and workload names must match Kubernetes-safe lowercase names. Tail is restricted to 10-500 lines. The agent executes a fixed `kubectl logs` command and caps the response size.
-
-This preserves the outbound-only design while giving the React UI a useful live log viewer before Loki/Grafana integration is complete.
-
-
-### Workload restart
-
-`k8s.restart_workload` is implemented as a moderate-risk command and is disabled by default.
-
-```json
-{
-  "command": "k8s.restart_workload",
-  "machineId": "oracle-a1-01",
-  "arguments": {
-    "namespace": "airflow",
-    "name": "airflow-scheduler",
-    "kind": "Deployment"
-  }
-}
-```
-
-Only Deployment, StatefulSet and DaemonSet are accepted. Extra arguments are rejected. The agent constructs a fixed `kubectl rollout restart` invocation; it never accepts a shell fragment from the browser.
-
-Enablement requires both the Control API capability flag and the separate Kubernetes restart RBAC overlay. `GET /api/v1/capabilities` exposes whether restart is currently enabled at the API layer.
-
-
-## Platform architecture read model
-
-ReactOracle V1 exposes machine-readable platform contracts so the frontend does not have to hard-code the future topology when live mode is enabled.
-
-```text
-GET /api/v1/platform/architecture
-GET /api/v1/platform/gold-catalog
-```
-
-The architecture response includes:
-
-- provider/system nodes and their lifecycle state (`live`, `external`, `planned`, `optional`);
-- the core data-engineering flow that ends at durable Gold;
-- a separate optional ML-enrichment flow;
-- durable data zones;
-- explicit invariants that Gold survives Oracle VM shutdown and business React applications are outside ReactOracle scope.
-
-The core flow intentionally does **not** depend on Kaggle or Neon. Kaggle is an optional branch from feature data and its historical analytical outputs return to the lakehouse. Neon can mirror compact latest-state / metadata tables when needed.
-
-The Gold catalog describes stable serving contracts such as `gold.sales_daily`, `gold.customer_360`, and `gold.delivery_performance`. Each entry includes grain, purpose, consumers, storage target, ML-derived flag and lifecycle status.
-
-
-## Provider inventory
-
-```text
-GET /api/v1/platform/providers
-```
-
-This endpoint describes the external provider ecosystem without claiming mutable free-tier quotas that have not been verified.
-
-Each provider includes:
-
-- category and role;
-- lifecycle state;
-- cost intent;
-- telemetry connection state;
-- whether current limits have been verified;
-- a short integration note.
-
-`usageBarsRequireVerifiedLimits=true` is a contract invariant. The frontend must not display quota-used percentages until an adapter supplies live usage and a verified current limit.
-
-
-## Platform architecture contracts
-
-ReactOracle keeps the V1 platform design behind Control API contracts rather than hard-wiring live UI components directly to providers.
-
-Read-only endpoints:
+## Platform read models
 
 ```text
 GET /api/v1/platform/architecture
@@ -200,49 +51,29 @@ GET /api/v1/platform/gold-catalog
 GET /api/v1/platform/providers
 ```
 
-The Data Factory endpoint exposes the planned Contoso -> DuckLake -> Airflow -> Spark -> Gold journey and the optional Kaggle/MLJAR enrichment branch.
-
-V1 invariants enforced by the API models:
-
-- Data Factory execution remains disabled;
-- business React applications remain outside ReactOracle scope;
-- Gold is included in durable output zones;
-- MotherDuck / DuckLake is the canonical durable destination;
-- architecture flows may reference only declared nodes;
-- platform/provider identifiers must remain unique;
-- provider usage bars require verified limits before they can be shown.
-
-
-## Live read-model readiness
-
-Operational read endpoints never fall back to demo telemetry in live mode.
-
-Until the authenticated Oracle agent posts its first valid snapshot, these endpoints return HTTP 503:
+The Data Factory contract exposes:
 
 ```text
-GET /api/v1/overview
-GET /api/v1/k8s/workloads
-GET /api/v1/infrastructure
-GET /api/v1/maintenance
+FOIL WIND synthetic source
+  -> Airflow
+  -> Polars + DuckDB
+  -> MotherDuck / DuckLake Bronze/Silver/Gold
 ```
 
-The response detail is:
+OCI Object Storage is the planned immutable raw/archive path. Neon is an optional compact serving mirror. Fabric and Databricks are separate external FOIL labs.
 
-```text
-No live Oracle agent snapshot has been received yet.
-```
+## Evidence contract
 
-This prevents mock CPU/RAM/Kubernetes/OpenTofu values from being mistaken for live infrastructure state. Static architecture-contract endpoints remain available before the agent connects.
+The V1 source contract is `classification=SYNTHETIC`, machine `MACHINE-WIND-001`, revision `2026-09-21.2`.
 
+The API must not represent proxy power, vibration or yaw-response fields as measured engineering performance.
 
-## Queued command safety
+## Agent heartbeat and snapshots
 
-ReactOracle does not intentionally queue operational commands for an offline Oracle agent.
+The agent runs outside K3s as a small systemd service so it can still report a K3s failure. It supplies host and workload snapshots used by the operational read model.
 
-Before accepting an allow-listed command, the Control API verifies that:
+Commands are only accepted for the known connected machine and, for Kubernetes workload commands, known recent workload targets. Queued commands expire before they can execute after a long disconnect.
 
-- the requested machine matches the established Oracle agent identity;
-- the Oracle agent heartbeat is currently fresh;
-- Kubernetes workload commands target a workload present in a fresh agent snapshot.
+## Provider inventory
 
-As a second defense, a command that remains queued for more than 120 seconds expires before it can be leased by the agent. This prevents an old restart or health-check request from executing unexpectedly after a delayed reconnect.
+Provider rows expose role, lifecycle state, cost intent and integration status. Usage percentages are prohibited unless a live adapter supplies actual usage and a currently verified limit.
