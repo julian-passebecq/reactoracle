@@ -11,9 +11,10 @@ Gold tables should persist outside the Oracle VM in MotherDuck / DuckLake.
 ```text
 Oracle VM / K3s
   Airflow
-  Spark
+  Airflow
+  Polars + DuckDB
       |
-      | publish validated data
+      | publish validated synthetic analytics
       v
 MotherDuck / DuckLake
   gold.*
@@ -47,12 +48,9 @@ A Gold table should have:
 Example catalog:
 
 ```text
-gold.sales_daily
-gold.customer_360
-gold.product_performance
-gold.delivery_performance
-gold.customer_satisfaction
-gold.customer_scores
+gold.wind_run_summary
+gold.wind_scenario_comparison
+gold.wind_quality_summary
 ```
 
 ML feature datasets belong in a separate `features.*` namespace even when derived from Gold.
@@ -63,10 +61,10 @@ Neon is optional for compact serving state and metadata, not the canonical Gold 
 
 Use Neon for things such as:
 
-- latest customer score
-- experiment/run metadata
-- ML metrics
-- model registry metadata
+- latest run status
+- compact run/result index
+- selected Gold summary rows for application queries
+- experiment metadata
 - ReactOracle operational state
 
 Keep historical analytical facts in the lakehouse unless a specific PostgreSQL exercise requires otherwise.
