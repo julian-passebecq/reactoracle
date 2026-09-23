@@ -32,6 +32,8 @@ scheduler:
 
 apiServer:
   replicas: 1
+  service:
+    type: ClusterIP
   resources:
     requests:
       cpu: 100m
@@ -127,6 +129,4 @@ env:
   - name: FOIL_SYNTHETIC_SEED
     value: "20260922"
 
-# Keep UI internal by default. Access with kubectl port-forward or protected ingress later.
-apiServerService:
-  type: ClusterIP
+# API/UI remains ClusterIP-only by default. Use port-forward or add protected ingress later.
