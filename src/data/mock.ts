@@ -24,7 +24,7 @@ export const overviewMock: Overview = {
   services: [
     { id: "k3s", name: "K3s", category: "platform", status: "healthy", detail: "14 / 14 pods", memoryMb: 720 },
     { id: "airflow", name: "Airflow", category: "data", status: "healthy", detail: "scheduler healthy", memoryMb: 830 },
-    { id: "spark", name: "Spark", category: "data", status: "idle", detail: "no active application", memoryMb: 280 },
+    { id: "polars-duckdb", name: "Polars + DuckDB", category: "data", status: "idle", detail: "ephemeral Airflow task pods", memoryMb: 0 },
     { id: "grafana", name: "Grafana", category: "monitoring", status: "healthy", detail: "dashboards available", memoryMb: 230 },
     { id: "prometheus", name: "Prometheus", category: "monitoring", status: "healthy", detail: "metrics scraping", memoryMb: 680 },
     { id: "loki", name: "Loki", category: "monitoring", status: "healthy", detail: "logs ingesting", memoryMb: 390 },
@@ -34,14 +34,14 @@ export const overviewMock: Overview = {
     { id: "airflow-api", name: "airflow-api", namespace: "airflow", kind: "Deployment", status: "Running", cpuMillicores: 65, memoryMb: 320, restarts: 0 },
     { id: "airflow-scheduler", name: "airflow-scheduler", namespace: "airflow", kind: "Deployment", status: "Running", cpuMillicores: 120, memoryMb: 510, restarts: 0 },
     { id: "postgres", name: "postgres", namespace: "airflow", kind: "StatefulSet", status: "Running", cpuMillicores: 35, memoryMb: 420, restarts: 0 },
-    { id: "spark-history", name: "spark-history", namespace: "spark", kind: "Deployment", status: "Running", cpuMillicores: 30, memoryMb: 280, restarts: 0 },
+    { id: "foil-wind-job", name: "foil-wind-medallion", namespace: "jobs", kind: "Job", status: "Complete", cpuMillicores: 0, memoryMb: 0, restarts: 0 },
     { id: "grafana", name: "grafana", namespace: "monitoring", kind: "Deployment", status: "Running", cpuMillicores: 35, memoryMb: 230, restarts: 0 },
     { id: "prometheus", name: "prometheus", namespace: "monitoring", kind: "StatefulSet", status: "Running", cpuMillicores: 85, memoryMb: 680, restarts: 0 },
     { id: "loki", name: "loki", namespace: "monitoring", kind: "StatefulSet", status: "Running", cpuMillicores: 45, memoryMb: 390, restarts: 0 },
   ],
   namespaces: [
     { name: "airflow", podsReady: 3, podsTotal: 3, cpuMillicores: 220, memoryMb: 1250 },
-    { name: "spark", podsReady: 1, podsTotal: 1, cpuMillicores: 30, memoryMb: 280 },
+    { name: "jobs", podsReady: 0, podsTotal: 0, cpuMillicores: 0, memoryMb: 0 },
     { name: "monitoring", podsReady: 5, podsTotal: 5, cpuMillicores: 210, memoryMb: 1780 },
     { name: "kube-system", podsReady: 5, podsTotal: 5, cpuMillicores: 140, memoryMb: 920 },
   ],
@@ -73,9 +73,9 @@ export const overviewMock: Overview = {
     backupStatus: "success",
   },
   activity: [
-    { id: "a1", when: "16:42", actor: "system", action: "Spark job customer-etl completed", status: "success" },
+    { id: "a1", when: "16:42", actor: "system", action: "Polars/DuckDB WIND medallion run completed", status: "success" },
     { id: "a2", when: "16:21", actor: "julian", action: "OpenTofu plan completed: no changes", status: "success" },
     { id: "a3", when: "15:51", actor: "system", action: "2 Ubuntu security updates detected", status: "warning" },
-    { id: "a4", when: "12:20", actor: "airflow", action: "dbt build completed", status: "success" },
+    { id: "a4", when: "12:20", actor: "airflow", action: "Airflow WIND pipeline completed", status: "success" },
   ],
 };
