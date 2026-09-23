@@ -372,7 +372,7 @@ func buildLogCommand(arguments map[string]any) ([]string, map[string]any, error)
 	}
 
 	namespace, ok := arguments["namespace"].(string)
-	if !ok || !isSafeKubernetesName(namespace) {
+	if !ok || !isSafeKubernetesNamespace(namespace) {
 		return nil, nil, errors.New("invalid Kubernetes namespace")
 	}
 	name, ok := arguments["name"].(string)
