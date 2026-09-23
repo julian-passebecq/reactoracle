@@ -1,0 +1,132 @@
+# ReactOracle / FOIL Oracle lab Airflow values
+# Target: Apache Airflow Helm chart 1.22.x, Airflow 3.3.2, single-node K3s.
+# Secrets are referenced, never embedded here.
+
+executor: KubernetesExecutor
+
+airflowVersion: "3.3.2"
+defaultAirflowRepository: ghcr.io/julian-passebecq/reactoracle-airflow
+defaultAirflowTag: "0.1.0"
+defaultAirflowDigest: null
+
+rbac:
+  create: true
+
+# KubernetesExecutor creates one worker pod per task.
+scheduler:
+  replicas: 1
+  serviceAccount:
+    automountServiceAccountToken: false
+    serviceAccountTokenVolume:
+      enabled: true
+      expirationSeconds: 3600
+      mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      volumeName: k8s-executor-token
+  resources:
+    requests:
+      cpu: 150m
+      memory: 384Mi
+    limits:
+      cpu: 750m
+      memory: 1Gi
+
+apiServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+
+dagProcessor:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 75m
+      memory: 256Mi
+    limits:
+      cpu: 400m
+      memory: 512Mi
+
+triggerer:
+  enabled: false
+
+workers:
+  kubernetes:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1536Mi
+
+# Built-in Postgres is acceptable for this bounded lab, not production.
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      enabled: true
+      size: 4Gi
+    resources:
+      requests:
+        cpu: 75m
+        memory: 192Mi
+      limits:
+        cpu: 400m
+        memory: 512Mi
+
+redis:
+  enabled: false
+
+pgbouncer:
+  enabled: false
+
+statsd:
+  enabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+
+databaseCleanup:
+  enabled: true
+  retentionDays: 30
+
+# DAG code is versioned in GitHub and synchronized read-only into Airflow.
+dags:
+  persistence:
+    enabled: false
+  gitSync:
+    enabled: true
+    repo: https://github.com/julian-passebecq/reactoracle.git
+    branch: feat/initial-control-plane
+    rev: HEAD
+    depth: 1
+    subPath: pipelines/airflow/dags
+    period: 60s
+
+# MotherDuck token is created separately by install.sh from local environment.
+secret:
+  - envName: MOTHERDUCK_TOKEN
+    secretName: reactoracle-data-secrets
+    secretKey: motherduck-token
+
+env:
+  - name: FOIL_DUCKDB_TARGET
+    value: "md:foil_oracle_lake"
+  - name: FOIL_SYNTHETIC_SAMPLES
+    value: "300"
+  - name: FOIL_SAMPLE_PERIOD_SECONDS
+    value: "1"
+  - name: FOIL_SYNTHETIC_SEED
+    value: "20260922"
+
+# Keep UI internal by default. Access with kubectl port-forward or protected ingress later.
+apiServerService:
+  type: ClusterIP
