@@ -101,15 +101,15 @@ export function ArchitecturePage() {
     <>
       <PageHeader
         title="Architecture"
-        subtitle="Macro view of generation, durable lakehouse, Oracle compute, ML and Gold serving"
+        subtitle="FOIL runtime data path: Oracle/K3s orchestration, Polars + DuckDB, durable DuckLake and serving"
       />
 
       <section className="architecturePrinciple">
         <div>
           <Text size={200} weight="semibold">Core rule</Text>
-          <Title2>Oracle is compute. MotherDuck / DuckLake is durable data.</Title2>
+          <Title2>Oracle is compute/orchestration. MotherDuck / DuckLake is durable analytics.</Title2>
           <Text className="muted">
-            Target architecture: if the Oracle VM is stopped, Airflow, Spark and local observability disappear temporarily, while Raw, Bronze, Silver, Gold and feature tables remain in the external lakehouse.
+            Target architecture: if the Oracle VM is stopped, Airflow, ephemeral Polars/DuckDB tasks and local observability disappear temporarily, while Bronze, Silver and Gold remain in the external lakehouse. Raw recovery artifacts are archived separately in OCI Object Storage.
           </Text>
         </div>
         <Badge color={data.goldSurvivesVmShutdown ? "success" : "warning"}>
@@ -165,9 +165,10 @@ export function ArchitecturePage() {
           <Title3>What disappears with the Oracle VM?</Title3>
           <div className="architectureList">
             <div><Badge color="warning">Temporary</Badge><Text>Airflow scheduling and DAG execution</Text></div>
-            <div><Badge color="warning">Temporary</Badge><Text>Spark drivers/executors and History Server</Text></div>
+            <div><Badge color="warning">Temporary</Badge><Text>Polars/DuckDB Airflow task pods</Text></div>
             <div><Badge color="warning">Temporary</Badge><Text>Grafana, Prometheus, Loki and local K3s services</Text></div>
-            <div><Badge color="success">Preserved</Badge><Text>MotherDuck / DuckLake Raw, Bronze, Silver, Gold and Features</Text></div>
+            <div><Badge color="success">Preserved</Badge><Text>MotherDuck / DuckLake Bronze, Silver, Gold and optional Features</Text></div>
+            <div><Badge color="success">Preserved</Badge><Text>OCI Object Storage raw/archive artifacts (when configured)</Text></div>
             <div><Badge color="success">Preserved</Badge><Text>GitHub source / CI artifacts and external provider state</Text></div>
             <div><Badge color="success">Preserved</Badge><Text>Optional Neon serving / ML metadata</Text></div>
           </div>
