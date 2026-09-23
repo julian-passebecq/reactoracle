@@ -55,15 +55,15 @@ export function DataFactoryPage() {
     <>
       <PageHeader
         title="Data Factory"
-        subtitle="V1 architecture contract for optional Contoso generation → durable Gold, with ML as a separate enrichment branch"
+        subtitle="FOIL WIND synthetic telemetry → Airflow → Polars/DuckDB → MotherDuck/DuckLake Gold"
       />
 
       <section className="factoryNotice">
         <div>
           <Text size={200} weight="semibold">V1 boundary</Text>
-          <Title2>Designed now. Executed later.</Title2>
+          <Title2>Executable pipeline code added; cloud deployment still pending.</Title2>
           <Text className="muted">
-            The generator is optional and does not block normal Oracle/Airflow/Spark work. V2 will add the headless C# execution path.
+            The repository now contains the WIND synthetic source and Polars/DuckDB medallion pipeline. MotherDuck credentials, Airflow/K3s deployment and OCI archive wiring remain to be validated live.
           </Text>
         </div>
         <Badge color={executionEnabled ? "success" : "warning"}>{executionEnabled ? "Execution enabled" : "Execution planned"}</Badge>
@@ -71,28 +71,28 @@ export function DataFactoryPage() {
 
       <section className="gridTwo sectionGap">
         <Card>
-          <Title3>Contoso source plan</Title3>
+          <Title3>FOIL source plan</Title3>
           <dl className="detailsList">
             <div><dt>Scenario</dt><dd>{contosoPlan.scenario}</dd></div>
             <div><dt>Generator</dt><dd>{contosoPlan.generator}</dd></div>
             <div><dt>Seed</dt><dd>{contosoPlan.seed}</dd></div>
-            <div><dt>Orders</dt><dd>{contosoPlan.scale.orders.toLocaleString()}</dd></div>
-            <div><dt>Customers</dt><dd>{contosoPlan.scale.customers.toLocaleString()}</dd></div>
-            <div><dt>Products</dt><dd>{contosoPlan.scale.products.toLocaleString()}</dd></div>
-            <div><dt>Stores</dt><dd>{contosoPlan.scale.stores}</dd></div>
-            <div><dt>Time span</dt><dd>{contosoPlan.scale.days} days</dd></div>
+            <div><dt>Default samples</dt><dd>{contosoPlan.scale.orders.toLocaleString()}</dd></div>
+            <div><dt>Technology</dt><dd>WIND</dd></div>
+            <div><dt>Machine</dt><dd>MACHINE-WIND-001</dd></div>
+            <div><dt>Revision</dt><dd>2026-09-21.2</dd></div>
+            <div><dt>Classification</dt><dd>SYNTHETIC</dd></div>
           </dl>
         </Card>
 
         <Card>
-          <Title3>Known ML signal</Title3>
+          <Title3>Evidence boundary</Title3>
           <dl className="detailsList">
             <div><dt>Profile</dt><dd>{contosoPlan.ml.profile}</dd></div>
             <div><dt>Target</dt><dd>{contosoPlan.ml.target}</dd></div>
             <div><dt>Primary signal</dt><dd>{contosoPlan.ml.primarySignal}</dd></div>
-            <div><dt>Positive rate</dt><dd>{Math.round(contosoPlan.ml.positiveOutcomeRate * 100)}%</dd></div>
-            <div><dt>Signal strength</dt><dd>{Math.round(contosoPlan.ml.signalStrength * 100)}%</dd></div>
-            <div><dt>Noise</dt><dd>{Math.round(contosoPlan.ml.noiseLevel * 100)}%</dd></div>
+            <div><dt>90° foil phase</dt><dd>Source-backed project input</dd></div>
+            <div><dt>Power</dt><dd>Synthetic proxy; not a validated power curve</dd></div>
+            <div><dt>Measured data</dt><dd>No</dd></div>
           </dl>
         </Card>
       </section>
@@ -101,7 +101,7 @@ export function DataFactoryPage() {
         <div className="sectionHeader">
           <div>
             <Title3>Canonical pipeline</Title3>
-            <Text className="muted">Gold is complete before ML. Oracle performs compute; MotherDuck / DuckLake owns durable analytical state.</Text>
+            <Text className="muted">Airflow orchestrates. Polars transforms. DuckDB executes analytical SQL. MotherDuck/DuckLake owns durable Bronze/Silver/Gold analytical state.</Text>
           </div>
         </div>
 
