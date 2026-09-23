@@ -237,26 +237,20 @@ export type DataFactoryStage = {
   detail: string;
 };
 
-export type ContosoGenerationPlan = {
+export type SyntheticSourcePlan = {
   scenario: string;
   generator: string;
   seed: number;
   optional: boolean;
+  technology: "WIND";
+  machineId: string;
+  machineRevision: string;
+  classification: "SYNTHETIC";
+  modelId: string;
   scale: {
-    orders: number;
-    customers: number;
-    products: number;
-    stores: number;
-    days: number;
-  };
-  ml: {
-    profile: string;
-    positiveOutcomeRate: number;
-    signalStrength: number;
-    noiseLevel: number;
-    target: string;
-    primarySignal: string;
-    optional: boolean;
+    samples: number;
+    samplePeriodSeconds: number;
+    durationSeconds: number;
   };
   output: {
     format: "Parquet";
@@ -266,7 +260,7 @@ export type ContosoGenerationPlan = {
 };
 
 export type DataFactoryPlan = {
-  contoso: ContosoGenerationPlan;
+  source: SyntheticSourcePlan;
   coreStages: DataFactoryStage[];
   mlStages: DataFactoryStage[];
   executionEnabled: boolean;
