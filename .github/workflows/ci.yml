@@ -113,3 +113,27 @@ jobs:
           PY
       - name: Validate monitoring installer shell syntax
         run: bash -n kubernetes/monitoring/install.sh
+      - name: Validate Airflow values and installer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          for path in (
+              Path("kubernetes/airflow/values.yaml"),
+              Path("kubernetes/airflow/secret.example.yaml"),
+          ):
+              with path.open("r", encoding="utf-8") as handle:
+                  yaml.safe_load(handle)
+              print("validated", path)
+          PY
+          bash -n kubernetes/airflow/install.sh
+      - name: Render Airflow Helm chart
+        run: |
+          helm repo add apache-airflow https://airflow.apache.org
+          helm repo update apache-airflow
+          helm template airflow apache-airflow/airflow \
+            --version 1.22.0 \
+            --namespace airflow \
+            --values kubernetes/airflow/values.yaml \
+            >/tmp/airflow-rendered.yaml
+          test -s /tmp/airflow-rendered.yaml
