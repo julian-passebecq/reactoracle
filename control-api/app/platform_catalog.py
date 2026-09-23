@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from .models import (
-    ContosoGenerationPlan,
-    ContosoMlPlan,
-    ContosoOutputPlan,
-    ContosoScale,
+    SyntheticSourceOutputPlan,
+    SyntheticSourcePlan,
+    SyntheticSourceScale,
     DataFactoryPlan,
     DataFactoryStage,
     DurableDataZone,
@@ -348,22 +347,22 @@ def build_provider_inventory() -> ProviderInventory:
 
 
 def build_data_factory_plan() -> DataFactoryPlan:
-    source = ContosoGenerationPlan(
+    source = SyntheticSourcePlan(
         scenario="foil.wind.synthetic_runtime",
         generator="FOIL WIND Synthetic Source",
         seed=20260922,
         optional=False,
-        scale=ContosoScale(orders=300, customers=1, products=1, stores=1, days=1),
-        ml=ContosoMlPlan(
-            profile="synthetic-wind-proxy-v1",
-            positiveOutcomeRate=0.0,
-            signalStrength=0.0,
-            noiseLevel=0.0,
-            target="runtime quality and scenario summaries",
-            primarySignal="wind speed + yaw alignment proxies",
-            optional=True,
+        technology="WIND",
+        machineId="MACHINE-WIND-001",
+        machineRevision="2026-09-21.2",
+        classification="SYNTHETIC",
+        modelId="synthetic-wind-proxy-v1",
+        scale=SyntheticSourceScale(
+            samples=300,
+            samplePeriodSeconds=1,
+            durationSeconds=300,
         ),
-        output=ContosoOutputPlan(
+        output=SyntheticSourceOutputPlan(
             format="Parquet",
             destination="MotherDuck / DuckLake",
             durableZones=["Bronze", "Silver", "Gold"],
@@ -371,7 +370,7 @@ def build_data_factory_plan() -> DataFactoryPlan:
     )
 
     return DataFactoryPlan(
-        contoso=source,
+        source=source,
         coreStages=[
             DataFactoryStage(
                 id="generate",
