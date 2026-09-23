@@ -2,14 +2,14 @@ import type { PlatformArchitecture, PlatformNode } from "../domain/types";
 
 export const architectureNodes: PlatformNode[] = [
   {
-    id: "contoso",
-    name: "Contoso Forge Lite",
+    id: "wind-source",
+    name: "FOIL WIND Synthetic Source",
     layer: "source",
     state: "planned",
-    provider: ".NET / C#",
-    role: "Deterministic synthetic retail data + causal ML truth",
+    provider: "Python / Polars",
+    role: "Deterministic synthetic WIND telemetry with explicit evidence classification",
     durable: false,
-    location: "Ephemeral generator job",
+    location: "Ephemeral Airflow task pod",
   },
   {
     id: "github",
@@ -47,7 +47,7 @@ export const architectureNodes: PlatformNode[] = [
     layer: "lakehouse",
     state: "planned",
     provider: "MotherDuck",
-    role: "Durable Parquet lakehouse for Raw, Bronze, Silver, Gold and ML features",
+    role: "Durable DuckLake analytical plane for Bronze, Silver, Gold and governed run history",
     durable: true,
     location: "Managed external",
   },
@@ -77,7 +77,7 @@ export const architectureNodes: PlatformNode[] = [
     layer: "compute",
     state: "live",
     provider: "Oracle Cloud",
-    role: "K3s compute host for Airflow, Spark and observability",
+    role: "K3s compute host for Airflow, Polars/DuckDB task pods and observability",
     durable: false,
     location: "Oracle Cloud",
   },
@@ -92,14 +92,14 @@ export const architectureNodes: PlatformNode[] = [
     location: "Oracle K3s",
   },
   {
-    id: "spark",
-    name: "Spark",
+    id: "polars-duckdb",
+    name: "Polars + DuckDB",
     layer: "compute",
-    state: "live",
-    provider: "Apache Spark",
-    role: "Distributed transformations, joins, partitioning and feature engineering",
+    state: "planned",
+    provider: "Python / DuckDB",
+    role: "Lightweight dataframe ETL and analytical SQL executed as ephemeral Airflow tasks",
     durable: false,
-    location: "Oracle K3s",
+    location: "Oracle K3s task pods",
   },
   {
     id: "kafka",
@@ -177,16 +177,16 @@ export const deliveryFlow = ["github", "github-actions", "cloudflare", "reactora
 
 export const controlFlow = ["reactoracle", "fastapi-cloud", "oracle-agent", "oracle-vm"];
 
-export const engineeringFlow = ["contoso", "motherduck", "airflow", "spark", "motherduck", "bi"];
+export const engineeringFlow = ["wind-source", "airflow", "polars-duckdb", "motherduck", "bi"];
 
 export const mlEnrichmentFlow = ["motherduck", "kaggle", "motherduck"];
 
 export const durableDataZones = [
-  { name: "Raw", owner: "MotherDuck / DuckLake", purpose: "Generated Parquet and ingested source data" },
+  { name: "Raw archive", owner: "OCI Object Storage", purpose: "Immutable Parquet + manifest recovery copy (planned)" },
   { name: "Bronze", owner: "MotherDuck / DuckLake", purpose: "Durable landed / typed data" },
   { name: "Silver", owner: "MotherDuck / DuckLake", purpose: "Validated and conformed data" },
   { name: "Gold", owner: "MotherDuck / DuckLake", purpose: "Canonical analytical tables served outside the VM" },
-  { name: "Features", owner: "MotherDuck / DuckLake", purpose: "ML-ready feature datasets derived from governed data" },
+  { name: "Features", owner: "MotherDuck / DuckLake", purpose: "Optional ML-ready feature datasets derived from governed data" },
   { name: "ML results", owner: "MotherDuck / DuckLake", purpose: "Historical predictions and analytical model outputs; Neon may mirror compact latest-state views" },
 ];
 
