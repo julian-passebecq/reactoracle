@@ -1,0 +1,273 @@
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
+body { min-width: 960px; background: #f5f5f5; color: #242424; }
+button, input, select { font: inherit; }
+a { color: inherit; text-decoration: none; }
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.sidebar { position: sticky; top: 0; height: 100vh; background: #fff; border-right: 1px solid #e0e0e0; padding: 18px 12px; display: flex; flex-direction: column; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+.brandMark { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; background: #242424; color: white; font-weight: 700; font-size: 12px; }
+nav { display: flex; flex-direction: column; gap: 4px; }
+.navItem { min-height: 40px; border-radius: 6px; display: flex; align-items: center; gap: 10px; padding: 0 10px; color: #424242; }
+.navItem:hover { background: #f5f5f5; }
+.navItem.active { background: #ebf3fc; color: #0f548c; font-weight: 600; }
+.sidebarFooter { margin-top: auto; padding: 10px; display: flex; align-items: center; gap: 8px; }
+.content { padding: 28px 34px 64px; max-width: 1600px; width: 100%; margin: 0 auto; overflow: hidden; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+.subtitle, .muted { color: #707070; }
+.small { font-size: 12px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.headerActions { display: flex; align-items: center; gap: 10px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.metricsThree { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
+.metricCard { min-height: 118px; justify-content: center; }
+.gridTwo { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; margin-bottom: 26px; }
+.serviceList { display: flex; flex-direction: column; }
+.serviceRow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 4px; border-bottom: 1px solid #ededed; }
+.serviceRow:last-child { border-bottom: 0; }
+.capacityBlock { margin: 12px 0 18px; }
+.capacityLabel { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 13px; }
+.quickActions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 18px; }
+.sectionHeader { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 12px; }
+.sectionHeader > div { display: grid; gap: 4px; }
+.sectionGap { margin-top: 28px; }
+.tableWrap { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 760px; }
+th, td { padding: 13px 16px; border-bottom: 1px solid #ededed; text-align: left; font-size: 13px; white-space: nowrap; }
+th { background: #fafafa; font-weight: 600; color: #616161; }
+tbody tr:last-child td { border-bottom: 0; }
+.strongCell { font-weight: 600; }
+.detailsList { display: grid; gap: 0; margin: 4px 0 0; }
+.detailsList > div { display: grid; grid-template-columns: 140px 1fr; gap: 20px; padding: 10px 0; border-bottom: 1px solid #ededed; }
+.detailsList dt { color: #707070; }
+.detailsList dd { margin: 0; font-weight: 600; }
+.stackText { display: grid; gap: 18px; }
+.namespaceGrid, .platformGrid { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 14px; }
+.namespaceMetric { font-size: 22px; font-weight: 650; margin-top: 12px; }
+.platformGrid { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+.platformCard { min-height: 190px; display: flex; flex-direction: column; gap: 12px; justify-content: flex-start; }
+.platformCard > button { margin-top: auto; align-self: flex-start; }
+.cardTop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.grafanaPlaceholder { min-height: 66px; border: 1px dashed #c7c7c7; background: #fafafa; border-radius: 6px; display: grid; place-items: center; color: #707070; font-size: 12px; }
+.dangerCard { border-color: #d13438; }
+.timeline { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+.timelineRow { display: grid; grid-template-columns: 90px 100px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 16px; border-bottom: 1px solid #ededed; }
+.timelineRow:last-child { border-bottom: 0; }
+.timelineAction { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settingRow { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid #ededed; }
+.logToolbar { display: flex; gap: 14px; margin-bottom: 22px; }
+.logToolbar > div { display: grid; gap: 6px; min-width: 180px; }
+.logViewer { margin: 12px 0 0; padding: 16px; border-radius: 6px; background: #1f1f1f; color: #f5f5f5; overflow: auto; line-height: 1.7; font-size: 12px; }
+.loadingState { min-height: 50vh; display: grid; place-items: center; }
+@media (max-width: 1200px) {
+  .app { grid-template-columns: 210px minmax(0, 1fr); }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+  .namespaceGrid, .platformGrid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+
+.errorCard { max-width: 680px; margin: 48px auto; border-color: #d13438; gap: 12px; }
+
+.topologyFlow { display: grid; gap: 18px; }
+.topologyStage { display: grid; gap: 10px; }
+.topologyStageLabel { color: #424242; }
+.topologyCards { display: grid; grid-template-columns: minmax(220px, 1fr) 34px minmax(220px, 1fr) 34px minmax(220px, 1fr); gap: 10px; align-items: stretch; }
+.topologyNode { min-height: 150px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+.topologyArrow, .topologyDown { display: grid; place-items: center; color: #707070; font-size: 22px; }
+.topologyDown { min-height: 20px; }
+.topologyHost { border-color: #b7d7f0; }
+.topologyHostMetrics { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 12px; color: #424242; }
+.topologyNamespace { min-height: 130px; }
+.topologyWorkloadSection { margin: 8px 0 0; }
+.topologyList { display: flex; flex-direction: column; margin-top: 8px; }
+.topologyExternal { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 14px; }
+.emptyState { min-height: 130px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+
+@media (max-width: 1200px) {
+  .topologyCards { grid-template-columns: 1fr; }
+  .topologyArrow { transform: rotate(90deg); min-height: 20px; }
+  .topologyExternal { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+}
+
+.healthNotice {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid #f2c661;
+  border-radius: 8px;
+  background: #fff8e6;
+}
+
+.healthCheckControl { display: inline-flex; align-items: center; gap: 8px; }
+.commandFailed { color: #a4262c; }
+
+.emptyPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px;
+  border: 1px dashed #c7c7c7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.logTargetSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
+.logTargetSummary > div { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid #ededed; border-radius: 6px; background: #fafafa; }
+
+.monitoringReady { color: #107c10; font-weight: 600; }
+
+.restartDialogContent { display: grid; gap: 16px; }
+.restartTarget { display: grid; grid-template-columns: 120px 1fr; gap: 8px 14px; padding: 12px; border: 1px solid #ededed; border-radius: 6px; background: #fafafa; }
+.commandProgress { display: flex; align-items: center; gap: 8px; }
+
+.architecturePrinciple {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 22px;
+  border: 1px solid #b7d7f0;
+  border-radius: 10px;
+  background: #f7fbff;
+}
+.architecturePrinciple > div { display: grid; gap: 7px; max-width: 980px; }
+.megaFlow {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+}
+.megaFlowStep { display: flex; align-items: stretch; gap: 8px; flex: 0 0 auto; }
+.megaFlowNode {
+  width: 190px;
+  min-height: 126px;
+  padding: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.megaFlowNodeHeader { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.megaFlowArrow { display: grid; place-items: center; min-width: 24px; color: #707070; font-size: 20px; }
+.durableZoneGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 14px;
+}
+.durableZoneCard { min-height: 145px; gap: 10px; }
+.architectureList { display: grid; gap: 0; margin-top: 8px; }
+.architectureList > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #ededed;
+}
+.architectureList > div:last-child { border-bottom: 0; }
+.architectureCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 14px;
+}
+.architectureNodeCard { min-height: 185px; display: flex; flex-direction: column; gap: 12px; }
+.architectureMeta {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  color: #707070;
+  font-size: 12px;
+}
+.architectureMeta span {
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: #f5f5f5;
+}
+@media (max-width: 1200px) {
+  .architecturePrinciple { align-items: flex-start; flex-direction: column; }
+  .durableZoneGrid, .architectureCardGrid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+
+.factoryNotice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 22px;
+  border: 1px solid #f2c661;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+.factoryNotice > div { display: grid; gap: 7px; max-width: 980px; }
+.factoryPipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+}
+.factoryStageWrap { display: flex; align-items: stretch; gap: 8px; flex: 0 0 auto; }
+.factoryStageCard {
+  width: 205px;
+  min-height: 175px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.factoryZoneRow { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+@media (max-width: 1200px) {
+  .factoryNotice { align-items: flex-start; flex-direction: column; }
+}
+
+.architectureLanes, .factoryLanes { display: grid; gap: 18px; }
+.architectureLane, .factoryLanes > div { display: grid; gap: 8px; }
+.architectureLaneLabel { color: #424242; }
+
+.providerPolicyCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 18px;
+}
+.providerPolicyCard > div { display: grid; gap: 6px; max-width: 980px; }
+.providerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 14px;
+}
+.providerCard {
+  min-height: 235px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.providerFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.providerFacts > div {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #ededed;
+  border-radius: 6px;
+  background: #fafafa;
+}
+@media (max-width: 1200px) {
+  .providerGrid { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+}
+
+.routeErrorPage {
+  min-height: 100vh;
+  padding: 48px 24px;
+  display: grid;
+  place-items: start center;
+  background: #f5f5f5;
+}

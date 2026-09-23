@@ -1,14 +1,160 @@
 # ReactOracle
 
-ReactOracle is a lightweight control-plane UI for a small Oracle Cloud data-engineering lab.
+ReactOracle is a lightweight control plane for an Oracle Cloud data-engineering lab.
 
-The target architecture is intentionally split:
+It is intentionally split so the Oracle VM spends its resources on data-platform workloads instead of on a large administration frontend.
 
-- **React + Fluent UI 2 frontend** hosted outside the VM.
-- **Control API** hosted outside the VM.
-- **Tiny outbound-connected agent** on the Oracle VM.
-- **K3s** on the VM for Airflow, Spark and observability workloads.
-- **Grafana + Prometheus + Loki** for deep observability.
-- **OpenTofu** for OCI infrastructure-as-code, executed through CI rather than as a resident VM service.
+## Architecture
 
-Development work is being bootstrapped on a feature branch before merge to `main`.
+```text
+React + Fluent UI 2
+(hosted outside Oracle)
+        |
+        v
+FastAPI Control API
+(hosted outside Oracle)
+        |
+        | outbound authenticated telemetry
+        v
+Oracle Ops Agent
+(systemd, Go, ARM64)
+        |
+        +-- OCI IMDSv2
+        +-- Linux host inventory
+        +-- read-only K3s API access
+        |
+        v
+Oracle A1 VM
+        |
+        +-- K3s
+        |   +-- Airflow
+        |   +-- Airflow task pods: Polars + DuckDB
+        |   +-- Grafana
+        |   +-- Prometheus
+        |   +-- Loki
+        |
+        +-- Docker for build/test work when useful
+```
+
+External services such as MotherDuck/DuckLake, Neon, Fabric and Databricks stay outside the VM.
+
+The target data architecture treats **Oracle as compute/orchestration** and **MotherDuck / DuckLake as durable analytical storage**. Airflow orchestrates Polars + DuckDB tasks; Spark is intentionally not part of the Oracle runtime. OCI Object Storage is the planned immutable raw/archive layer. Bronze, Silver and Gold live together in the MotherDuck/DuckLake analytical plane.
+
+OpenTofu manages OCI infrastructure through CI rather than running as a permanent service on the VM.
+
+## Current implementation
+
+The frontend already provides routed pages for:
+
+- Overview
+- Architecture
+- Topology
+- Infrastructure / OpenTofu
+- Kubernetes
+- Data Factory
+- Data Platform
+- Monitoring
+- Providers
+- Logs
+- Maintenance
+- Activity
+- Settings
+
+The current live read path is:
+
+```text
+Oracle VM
+  -> Go agent
+  -> Control API
+  -> React Query adapter
+  -> ReactOracle UI
+```
+
+The agent currently collects OCI shape metadata, OCPU/RAM, CPU usage, memory usage, root disk utilization, uptime, K3s version, Kubernetes workload inventory, namespace readiness, OS/kernel and reboot-required state.
+
+A lightweight K3s observability bundle is also checked in under `kubernetes/monitoring/`: kube-prometheus-stack, Grafana, Loki and Grafana Alloy, with short retention and resource limits sized for the small Oracle lab.
+
+## Frontend
+
+```bash
+npm install
+npm run dev
+```
+
+Without configuration the UI uses typed mock data.
+
+For live mode:
+
+```bash
+cp .env.example .env
+```
+
+Set:
+
+```env
+VITE_CONTROL_API_BASE_URL=https://your-control-api.example.com
+VITE_GRAFANA_URL=
+VITE_HEADLAMP_URL=
+VITE_AIRFLOW_URL=
+```
+
+## Control API
+
+The backend lives in `control-api/`.
+
+```bash
+cd control-api
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+export REACTORACLE_AGENT_TOKEN='replace-me'
+fastapi dev app/main.py
+```
+
+The browser-facing API is read-mostly. Moderate-risk workload restart exists but is disabled unless both the Control API mutation flag and the narrow restart RBAC overlay are enabled. Agent ingress requires a bearer token.
+
+## Oracle agent
+
+The agent lives in `agent/` and is written in Go so it can run as a small ARM64 systemd service.
+
+CI cross-compiles an installable Linux ARM64 artifact containing:
+
+- `reactoracle-agent`
+- systemd unit
+- environment example
+- install script
+- least-privilege K3s bootstrap script
+- read-only RBAC manifest
+- SHA-256 checksum
+
+Manual build:
+
+```bash
+cd agent
+GOOS=linux GOARCH=arm64 go build -o reactoracle-agent ./cmd/reactoracle-agent
+```
+
+The agent opens no inbound administration port.
+
+## Security invariants
+
+- no generic remote-shell API
+- no SSH key, OCI secret or cluster-admin kubeconfig in the browser
+- agent traffic is outbound from the VM
+- base agent Kubernetes access is read-only; optional restart capability uses a separate narrow get/patch RBAC overlay
+- OpenTofu credentials remain in CI
+- disruptive operations will require explicit confirmation and audit records
+- destructive operations remain disabled during bootstrap
+
+See:
+
+- `docs/ARCHITECTURE.md`
+- `docs/CONTROL_API.md`
+- `docs/ROADMAP.md`
+- `docs/DEPLOYMENT.md`
+- `docs/MONITORING.md`
+- `docs/DATA_FACTORY_ROADMAP.md`
+- `docs/GOLD_SERVING.md`
+- `pipelines/README.md`
+- `agent/README.md`
+- `kubernetes/README.md`

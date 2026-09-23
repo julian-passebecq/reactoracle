@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+      - run: npm run build
+
+  control-api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: control-api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e '.[dev]'
+      - name: Verify Python environment
+        run: |
+          python -m pip check
+          python -m compileall -q app tests
+      - run: pytest -q --strict-config --strict-markers
+
+  pipelines:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipelines
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e '.[dev]'
+      - name: Verify pipeline package
+        run: |
+          python -m pip check
+          python -m compileall -q src tests airflow/dags
+      - run: pytest
+
+  agent:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.25.x"
+      - name: Check Go formatting
+        run: |
+          unformatted="$(gofmt -l cmd/reactoracle-agent/main.go cmd/reactoracle-agent/main_test.go)"
+          test -z "$unformatted" || { echo "gofmt required:"; echo "$unformatted"; exit 1; }
+      - run: go vet ./...
+      - run: go test ./...
+      - name: Race detector
+        run: go test -race ./...
+      - name: Build ARM64 bundle
+        run: |
+          bundle=/tmp/reactoracle-agent-linux-arm64
+          mkdir -p "$bundle"
+          GOOS=linux GOARCH=arm64 go build -o "$bundle/reactoracle-agent" ./cmd/reactoracle-agent
+          cp reactoracle-agent.service agent.env.example install.sh configure-kube-access.sh "$bundle/"
+          cp ../kubernetes/system/reactoracle-agent-rbac.yaml "$bundle/"
+          cp ../kubernetes/system/reactoracle-agent-restart-rbac.yaml "$bundle/"
+          (cd "$bundle" && sha256sum reactoracle-agent > SHA256SUMS)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: reactoracle-agent-linux-arm64
+          path: /tmp/reactoracle-agent-linux-arm64
+          if-no-files-found: error
+
+  monitoring-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install pyyaml
+      - name: Validate monitoring YAML
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          root = Path("kubernetes/monitoring")
+          for path in sorted(root.glob("*.yaml")):
+              with path.open("r", encoding="utf-8") as handle:
+                  list(yaml.safe_load_all(handle))
+              print("validated", path)
+          PY
+      - name: Validate monitoring installer shell syntax
+        run: bash -n kubernetes/monitoring/install.sh
+      - name: Validate Airflow values and installer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          for path in (
+              Path("kubernetes/airflow/values.yaml"),
+              Path("kubernetes/airflow/secret.example.yaml"),
+          ):
+              with path.open("r", encoding="utf-8") as handle:
+                  yaml.safe_load(handle)
+              print("validated", path)
+          PY
+          bash -n kubernetes/airflow/install.sh
+      - name: Render Airflow Helm chart
+        run: |
+          helm repo add apache-airflow https://airflow.apache.org
+          helm repo update apache-airflow
+          helm template airflow apache-airflow/airflow \
+            --version 1.22.0 \
+            --namespace airflow \
+            --values kubernetes/airflow/values.yaml \
+            >/tmp/airflow-rendered.yaml
+          test -s /tmp/airflow-rendered.yaml

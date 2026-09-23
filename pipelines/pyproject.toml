@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foil-oracle-pipeline"
+version = "0.1.0"
+description = "Lightweight FOIL Oracle data pipeline using Polars and DuckDB"
+requires-python = ">=3.12"
+dependencies = [
+  "duckdb>=1.5.2,<2",
+  "polars>=1.30,<2",
+  "pyarrow>=20,<24",
+  "pytz>=2025.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<10",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-config --strict-markers"
