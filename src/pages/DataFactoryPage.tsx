@@ -49,7 +49,7 @@ export function DataFactoryPage() {
     );
   }
 
-  const { contoso: contosoPlan, coreStages: coreDataFactoryStages, mlStages: mlDataFactoryStages, executionEnabled } = planQuery.data;
+  const { source, coreStages: coreDataFactoryStages, mlStages: mlDataFactoryStages, executionEnabled } = planQuery.data;
 
   return (
     <>
@@ -73,23 +73,23 @@ export function DataFactoryPage() {
         <Card>
           <Title3>FOIL source plan</Title3>
           <dl className="detailsList">
-            <div><dt>Scenario</dt><dd>{contosoPlan.scenario}</dd></div>
-            <div><dt>Generator</dt><dd>{contosoPlan.generator}</dd></div>
-            <div><dt>Seed</dt><dd>{contosoPlan.seed}</dd></div>
-            <div><dt>Default samples</dt><dd>{contosoPlan.scale.orders.toLocaleString()}</dd></div>
-            <div><dt>Technology</dt><dd>WIND</dd></div>
-            <div><dt>Machine</dt><dd>MACHINE-WIND-001</dd></div>
-            <div><dt>Revision</dt><dd>2026-09-21.2</dd></div>
-            <div><dt>Classification</dt><dd>SYNTHETIC</dd></div>
+            <div><dt>Scenario</dt><dd>{source.scenario}</dd></div>
+            <div><dt>Generator</dt><dd>{source.generator}</dd></div>
+            <div><dt>Seed</dt><dd>{source.seed}</dd></div>
+            <div><dt>Default samples</dt><dd>{source.scale.samples.toLocaleString()}</dd></div>
+            <div><dt>Technology</dt><dd>{source.technology}</dd></div>
+            <div><dt>Machine</dt><dd>{source.machineId}</dd></div>
+            <div><dt>Revision</dt><dd>{source.machineRevision}</dd></div>
+            <div><dt>Classification</dt><dd>{source.classification}</dd></div>
           </dl>
         </Card>
 
         <Card>
           <Title3>Evidence boundary</Title3>
           <dl className="detailsList">
-            <div><dt>Profile</dt><dd>{contosoPlan.ml.profile}</dd></div>
-            <div><dt>Target</dt><dd>{contosoPlan.ml.target}</dd></div>
-            <div><dt>Primary signal</dt><dd>{contosoPlan.ml.primarySignal}</dd></div>
+            <div><dt>Model</dt><dd>{source.modelId}</dd></div>
+            <div><dt>Sample period</dt><dd>{source.scale.samplePeriodSeconds}s</dd></div>
+            <div><dt>Duration</dt><dd>{source.scale.durationSeconds}s</dd></div>
             <div><dt>90° foil phase</dt><dd>Source-backed project input</dd></div>
             <div><dt>Power</dt><dd>Synthetic proxy; not a validated power curve</dd></div>
             <div><dt>Measured data</dt><dd>No</dd></div>
@@ -121,10 +121,10 @@ export function DataFactoryPage() {
         <Card>
           <Title3>Durable output</Title3>
           <Text>
-            Contoso emits {contosoPlan.output.format}; the canonical destination is {contosoPlan.output.destination}.
+            The synthetic source emits {source.output.format}; the canonical analytical destination is {source.output.destination}.
           </Text>
           <div className="factoryZoneRow">
-            {contosoPlan.output.durableZones.map((zone) => <Badge key={zone} color="success">{zone}</Badge>)}
+            {source.output.durableZones.map((zone) => <Badge key={zone} color="success">{zone}</Badge>)}
           </div>
           <Text size={200} className="muted">
             These zones must remain available when the Oracle VM is stopped or rebuilt.
