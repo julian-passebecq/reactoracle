@@ -85,9 +85,9 @@ export const architectureNodes: PlatformNode[] = [
     id: "airflow",
     name: "Airflow",
     layer: "orchestration",
-    state: "live",
+    state: "planned",
     provider: "Apache Airflow",
-    role: "Pipeline orchestration and external job coordination",
+    role: "Pipeline orchestration using Kubernetes task execution on K3s",
     durable: false,
     location: "Oracle K3s",
   },
@@ -102,24 +102,34 @@ export const architectureNodes: PlatformNode[] = [
     location: "Oracle K3s task pods",
   },
   {
-    id: "kafka",
-    name: "Managed Kafka",
-    layer: "source",
-    state: "external",
-    provider: "External free tier",
-    role: "Streaming source without consuming Oracle VM memory",
+    id: "oci-object-storage",
+    name: "OCI Object Storage",
+    layer: "lakehouse",
+    state: "planned",
+    provider: "Oracle Cloud",
+    role: "Immutable raw/archive Parquet and manifests for recovery",
     durable: true,
-    location: "Managed external",
+    location: "Oracle Cloud managed storage",
   },
   {
-    id: "kaggle",
-    name: "Kaggle + MLJAR",
+    id: "fabric",
+    name: "Microsoft Fabric Lab",
+    layer: "consumption",
+    state: "external",
+    provider: "Microsoft Fabric",
+    role: "Separate real-time, Data Factory, OneLake and notebook lab",
+    durable: true,
+    location: "External FOIL lab",
+  },
+  {
+    id: "databricks",
+    name: "Databricks Lab",
     layer: "ml",
-    state: "planned",
-    provider: "Kaggle",
-    role: "Optional external bounded ML / AutoML execution from feature tables",
-    durable: false,
-    location: "Managed external compute",
+    state: "external",
+    provider: "Databricks",
+    role: "Frozen-snapshot Monte Carlo, PySpark, ML and MLflow research",
+    durable: true,
+    location: "External FOIL lab",
   },
   {
     id: "neon",
@@ -179,7 +189,7 @@ export const controlFlow = ["reactoracle", "fastapi-cloud", "oracle-agent", "ora
 
 export const engineeringFlow = ["wind-source", "airflow", "polars-duckdb", "motherduck", "bi"];
 
-export const mlEnrichmentFlow = ["motherduck", "kaggle", "motherduck"];
+export const mlEnrichmentFlow = ["motherduck", "databricks", "motherduck"];
 
 export const durableDataZones = [
   { name: "Raw archive", owner: "OCI Object Storage", purpose: "Immutable Parquet + manifest recovery copy (planned)" },
